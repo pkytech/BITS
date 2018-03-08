@@ -37,7 +37,7 @@ public class TestKafka {
 
 	@Test
 	public void testAutoCommit() throws Exception {
-		ContainerProperties containerProps = new ContainerProperties("testnew");
+		ContainerProperties containerProps = new ContainerProperties("test");
 		final CountDownLatch latch = new CountDownLatch(4);
 		containerProps.setMessageListener(new MessageListener<Integer, String>() {
 
@@ -53,11 +53,11 @@ public class TestKafka {
 		container.start();
 		Thread.sleep(1000); // wait a bit for the container to start
 		KafkaTemplate<Integer, String> template = createTemplate();
-		template.setDefaultTopic("testnew");
-		template.send("testnew", "foo");
-		template.send("testnew", "bar");
-		template.send("testnew", "baz");
-		template.send("testnew", "qux");
+		template.setDefaultTopic("test");
+		template.send("test", "foo");
+		template.send("test", "bar");
+		template.send("test", "baz");
+		template.send("test", "qux");
 		template.flush();
 		assertTrue(latch.await(60, TimeUnit.SECONDS));
 		container.stop();
@@ -82,7 +82,8 @@ public class TestKafka {
 
 	private Map<String, Object> consumerProps() {
 		Map<String, Object> props = new HashMap<>();
-		props.put(ConsumerConfig.BOOTSTRAP_SERVERS_CONFIG, "tphadke02lx.corp.amdocs.com:9092");
+		props.put(ConsumerConfig.BOOTSTRAP_SERVERS_CONFIG, "localhost:9092");
+		//props.put(ConsumerConfig.BOOTSTRAP_SERVERS_CONFIG, "tphadke02lx.corp.amdocs.com:9092");
 		props.put(ConsumerConfig.GROUP_ID_CONFIG, "payment-service");
 		props.put(ConsumerConfig.ENABLE_AUTO_COMMIT_CONFIG, true);
 		props.put(ConsumerConfig.AUTO_COMMIT_INTERVAL_MS_CONFIG, "100");
@@ -94,10 +95,12 @@ public class TestKafka {
 
 	private Map<String, Object> senderProps() {
 		Map<String, Object> props = new HashMap<>();
-		props.put(ProducerConfig.BOOTSTRAP_SERVERS_CONFIG, "tphadke02lx.corp.amdocs.com:9092");
+		props.put(ProducerConfig.BOOTSTRAP_SERVERS_CONFIG, "localhost:9092");
+		//props.put(ProducerConfig.BOOTSTRAP_SERVERS_CONFIG, "tphadke02lx.corp.amdocs.com:9092");
 		props.put(ProducerConfig.RETRIES_CONFIG, 0);
 		props.put(ProducerConfig.BATCH_SIZE_CONFIG, 16384);
 		props.put(ProducerConfig.LINGER_MS_CONFIG, 1);
+		props.put(ConsumerConfig.ENABLE_AUTO_COMMIT_CONFIG, true);
 		props.put(ProducerConfig.BUFFER_MEMORY_CONFIG, 33554432);
 		props.put(ProducerConfig.KEY_SERIALIZER_CLASS_CONFIG, IntegerSerializer.class);
 		props.put(ProducerConfig.VALUE_SERIALIZER_CLASS_CONFIG, StringSerializer.class);

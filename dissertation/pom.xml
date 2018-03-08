@@ -13,6 +13,7 @@
     <url>http://www.bits-pilani.ac.in/</url>
   </organization>
   <modules>
+	<module>common</module>
 	<module>microservices</module>
   </modules>
 </project>
