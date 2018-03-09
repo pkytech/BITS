@@ -46,7 +46,7 @@ public class Payment {
         this.paymentId = paymentId;
     }
 
-    @OneToOne(cascade = CascadeType.ALL)
+    @OneToOne(cascade = CascadeType.ALL, fetch = FetchType.EAGER)
     @JoinColumn(name = "ORDER_ID")
     public Order getOrder() {
         return order;

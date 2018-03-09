@@ -58,7 +58,8 @@ public class PaymentConfigurator {
                                 new ConcurrentKafkaListenerContainerFactory<>();
         factory.setConsumerFactory(consumerFactory());
         factory.setConcurrency(3);
-        factory.getContainerProperties().setPollTimeout(3000);
+        factory.getContainerProperties().setPollTimeout(BitsConfigurator.getIntProperty(
+				"bits.mtech.kafka.poll-timeout", 3000));
         return factory;
     }
 

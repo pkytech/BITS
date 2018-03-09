@@ -29,7 +29,7 @@ public class KafkaEventListener implements MessageListener<Integer, String> {
 	@Override
 	public void onMessage(ConsumerRecord<Integer, String> consumerRecord) {
 
-		logger.info("Received Kafka Message: 2----> " + consumerRecord);
+		logger.info("Received Kafka Message: " + consumerRecord);
 
 		if (consumerRecord == null) {
 			return;
@@ -46,7 +46,6 @@ public class KafkaEventListener implements MessageListener<Integer, String> {
 			logger.log(Level.WARNING, "Failed to convert message", ilse);
 			return;
 		}
-        logger.info("Received Kafka Message: 3----> " + event);
 		if (event == null || event.getSource() == null || "PAYMENT".equalsIgnoreCase(event.getSource())) {
 			return;
 		}

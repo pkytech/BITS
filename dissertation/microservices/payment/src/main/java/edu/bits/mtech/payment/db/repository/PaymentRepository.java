@@ -5,12 +5,14 @@
 
 package edu.bits.mtech.payment.db.repository;
 
+import edu.bits.mtech.payment.db.bo.Order;
 import edu.bits.mtech.payment.db.bo.Payment;
 
 public interface PaymentRepository {
 
     void save(Payment payment);
 
-    Payment findByKey(String key);
+    Payment findPaymentByKey(String key);
 
+    Order findOrderByKey(String key);
 }
