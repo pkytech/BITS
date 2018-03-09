@@ -15,6 +15,7 @@ public class AuthorizePaymentRequest {
     private String nameOnCard;
     private String cvv;
     private double authorizeAmount;
+    private long customerId;
 
     public String getOrderId() {
         return orderId;
@@ -65,5 +66,13 @@ public class AuthorizePaymentRequest {
                 ", cvv='" + cvv + '\'' +
                 ", authorizeAmount=" + authorizeAmount +
                 '}';
+    }
+
+    public long getCustomerId() {
+        return customerId;
+    }
+
+    public void setCustomerId(long customerId) {
+        this.customerId = customerId;
     }
 }

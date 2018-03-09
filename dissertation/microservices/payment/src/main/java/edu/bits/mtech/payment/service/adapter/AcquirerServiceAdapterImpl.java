@@ -9,8 +9,7 @@ import edu.bits.mtech.common.BitsPocConstants;
 import edu.bits.mtech.payment.service.bo.AcquirerAuthorizeRequest;
 import edu.bits.mtech.payment.service.bo.AcquirerAuthorizeResponse;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.http.HttpStatus;
-import org.springframework.http.ResponseEntity;
+import org.springframework.http.*;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
 
@@ -33,12 +32,17 @@ public class AcquirerServiceAdapterImpl implements AcquirerServiceAdapter {
     private static final String SERVICE_URL = "http://"+ BitsPocConstants.ACQUIRER_SERVICE.toUpperCase()+"/rest/authorize";
 
     @Override
-    public AcquirerAuthorizeResponse authorize(AcquirerAuthorizeRequest acquirerAuthorizeRequest) {
+    public AcquirerAuthorizeResponse authorize(AcquirerAuthorizeRequest acquirerAuthorizeRequest, boolean update) {
         logger.finest("Calling Acquirer service");
         ResponseEntity<AcquirerAuthorizeResponse> responseEntity = null;
         AcquirerAuthorizeResponse acquirerAuthorizeResponse = null;
         try {
-            responseEntity = restTemplate.postForEntity(SERVICE_URL, acquirerAuthorizeRequest, AcquirerAuthorizeResponse.class);
+            if (update) {
+                HttpEntity<AcquirerAuthorizeRequest> entity = new HttpEntity<>(acquirerAuthorizeRequest);
+                responseEntity = restTemplate.exchange(SERVICE_URL, HttpMethod.PUT, entity, AcquirerAuthorizeResponse.class);
+            } else {
+                responseEntity = restTemplate.postForEntity(SERVICE_URL, acquirerAuthorizeRequest, AcquirerAuthorizeResponse.class);
+            }
 
             if (responseEntity != null && responseEntity.getStatusCode() == HttpStatus.ACCEPTED) {
                 acquirerAuthorizeResponse = responseEntity.getBody();
@@ -49,5 +53,30 @@ public class AcquirerServiceAdapterImpl implements AcquirerServiceAdapter {
             logger.log(Level.WARNING, "Failed to execute remote call to acquirer", e);
         }
         return acquirerAuthorizeResponse;
+    }
+
+    @Override
+    public AcquirerAuthorizeResponse cancelAuthorize(String authorizeId) {
+        logger.finest("Calling Acquirer cancel service");
+        ResponseEntity<AcquirerAuthorizeResponse> responseEntity = null;
+        AcquirerAuthorizeResponse acquirerAuthorizeResponse = new AcquirerAuthorizeResponse();
+        try {
+            HttpEntity entity = new HttpEntity<>(getHttpHeaders());
+            responseEntity = restTemplate.exchange(SERVICE_URL+"/cancel/"+authorizeId, HttpMethod.DELETE, entity, AcquirerAuthorizeResponse.class);
+
+            if (responseEntity == null) {
+                acquirerAuthorizeResponse = null;
+            }
+        } catch (Exception e) {
+            logger.log(Level.WARNING, "Failed to execute remote call to acquirer", e);
+        }
+
+        return acquirerAuthorizeResponse;
+    }
+
+    private HttpHeaders getHttpHeaders() {
+        HttpHeaders headers = new HttpHeaders();
+        headers.add("Content-Type", MediaType.APPLICATION_JSON_VALUE);
+        return headers;
     }
 }

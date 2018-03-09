@@ -7,6 +7,9 @@ import edu.bits.mtech.common.BitsPocConstants;
 import edu.bits.mtech.common.StatusEnum;
 import edu.bits.mtech.common.bo.Event;
 import edu.bits.mtech.common.bo.EventData;
+import edu.bits.mtech.payment.db.bo.Order;
+import edu.bits.mtech.payment.db.bo.Payment;
+import edu.bits.mtech.payment.db.repository.PaymentRepository;
 import edu.bits.mtech.payment.kafka.PaymentEventProducer;
 import edu.bits.mtech.payment.service.adapter.AcquirerServiceAdapter;
 import edu.bits.mtech.payment.service.bo.AcquirerAuthorizeRequest;
@@ -43,6 +46,9 @@ public class PaymentRestService {
 	@Autowired
 	private AcquirerServiceAdapter acquirerServiceAdapter;
 
+	@Autowired
+    private PaymentRepository paymentRepository;
+
 	@RequestMapping(method = RequestMethod.POST, value = "/rest/payment/authorize", produces = "application/json",
 			consumes = "application/json")
 	public ResponseEntity<AuthorizePaymentResponse> authorizePayment(@RequestBody
@@ -53,28 +59,96 @@ public class PaymentRestService {
 			logger.finest("Authorize Payment request received: " + request.getOrderId());
 		}
 
-		AcquirerAuthorizeResponse authorizeResponse = authorizePaymentWithAcquirer(request);
+        AcquirerAuthorizeResponse authorizeResponse = null;
+
+		//Check for idempotency
+        Order order = new Order();
+        order.setOrderId(request.getOrderId());
+        Payment payment = null;//paymentRepository.findByOrder(order);
+		if (payment != null && StatusEnum.PAYMENT_AUTHORIZED.name().equalsIgnoreCase(payment.getStatus())) {
+            AuthorizePaymentResponse response = new AuthorizePaymentResponse();
+            response.setPaymentId(payment.getPaymentId());
+            response.setAuhtorizeAmount(payment.getAuthorizeAmount());
+            response.setOrderId(request.getOrderId());
+		    return ResponseEntity.ok(response);
+        } else if (payment != null && payment.getAuthorizeAmount() < request.getAuthorizeAmount()) {
+		    logger.info("Updating authorize amount");
+            authorizeResponse = authorizePaymentWithAcquirer(request, payment.getPaymentId());
+        } else {
+            logger.info("Authorize amount");
+            authorizeResponse = authorizePaymentWithAcquirer(request, null);
+        }
 
 		AuthorizePaymentResponse response = new AuthorizePaymentResponse();
 		if (authorizeResponse == null) {
 			response.setMessage("Failed to authorize");
 			response.setStatusCode(HttpStatus.BAD_REQUEST);
+			response.setPaymentStatusCode(StatusEnum.PAYMENT_AUTHORIZE_FAILED);
 
 			//Fire event on queue for failed authorize
-			firePaymentEvent(request, null, StatusEnum.PAYMENT_FAILED);
+			firePaymentEvent(request, null, StatusEnum.PAYMENT_AUTHORIZE_FAILED);
 			ResponseEntity.accepted();
 		} else {
 			response.setPaymentId(authorizeResponse.getAuthorizeId());
 			response.setStatusCode(HttpStatus.ACCEPTED);
+            response.setPaymentStatusCode(StatusEnum.PAYMENT_AUTHORIZED);
 
-			//fire event on queue for successful authorize
-			firePaymentEvent(request, authorizeResponse.getAuthorizeId(), StatusEnum.PAYMENT_AUTHORIZED);
+            //save to DB
+            boolean saveSuccessful = false;
+            try {
+                logger.fine("Saving Payment entity");
+                saveToDatabase(request, authorizeResponse);
+                saveSuccessful = true;
+            } catch (Exception e) {
+                logger.log(Level.WARNING, "Failed to save PaymentEntity calling cancel authorize", e);
+                response.setPaymentStatusCode(StatusEnum.PAYMENT_AUTHORIZE_FAILED);
+                AcquirerAuthorizeResponse cancelAuthorize = cancelAuthorize(authorizeResponse.getAuthorizeId());
+                if (cancelAuthorize == null) {
+                    logger.log(Level.SEVERE, "PAY001: Failed to cancel auth: " + authorizeResponse.getAuthorizeId());
+                }
+            }
+
+            //fire event on queue for successful authorize
+            if (saveSuccessful) {
+                firePaymentEvent(request, authorizeResponse.getAuthorizeId(), StatusEnum.PAYMENT_AUTHORIZED);
+            }
+
 		}
 
 		return ResponseEntity.ok(response);
 	}
 
-	private void firePaymentEvent(AuthorizePaymentRequest request, String paymentId,
+    private AcquirerAuthorizeResponse cancelAuthorize(String authorizeId) {
+        if (logger.isLoggable(Level.FINEST)) {
+            logger.finest("Cancel Authorize Payment request received: " + authorizeId);
+        }
+
+        return acquirerServiceAdapter.cancelAuthorize(authorizeId);
+    }
+
+    private void saveToDatabase(AuthorizePaymentRequest request, AcquirerAuthorizeResponse authorizeResponse) {
+        Payment payment = new Payment();
+        payment.setPaymentId(authorizeResponse.getAuthorizeId());
+        payment.setCardNumber(request.getCardNumber());
+        payment.setNameOnCard(request.getNameOnCard());
+        payment.setCvv(request.getCvv());
+        payment.setCustomerId(request.getCustomerId());
+        payment.setPaymentId(authorizeResponse.getAuthorizeId());
+        payment.setAuthorizeAmount(authorizeResponse.getAuthorizeAmount());
+
+        Order order = new Order();
+        order.setCustomerId(request.getCustomerId());
+        order.setOrderId(request.getOrderId());
+        order.setPaymentId(payment.getPaymentId());
+
+        payment.setOrder(order);
+
+        paymentRepository.save(payment);
+
+        logger.info("Payment successfully saved to DB");
+    }
+
+    private void firePaymentEvent(AuthorizePaymentRequest request, String paymentId,
 								  StatusEnum paymentStatus) {
 		Event event = new Event();
 		event.setEventId(UUID.randomUUID().toString());
@@ -93,7 +167,7 @@ public class PaymentRestService {
 	 * @param request authorize request from client
 	 * @return the response from acquirer.
 	 */
-	private AcquirerAuthorizeResponse authorizePaymentWithAcquirer(AuthorizePaymentRequest request) {
+	private AcquirerAuthorizeResponse authorizePaymentWithAcquirer(AuthorizePaymentRequest request, String paymentId) {
 		AcquirerAuthorizeResponse authorizeResponse = null;
 
 		try {
@@ -103,7 +177,10 @@ public class PaymentRestService {
 			acquirerAuthorizeRequest.setNameOnCard(request.getNameOnCard());
 			acquirerAuthorizeRequest.setCvv(request.getCvv());
 			acquirerAuthorizeRequest.setAuthorizeAmount(request.getAuthorizeAmount());
-			authorizeResponse = acquirerServiceAdapter.authorize(acquirerAuthorizeRequest);
+			if (paymentId != null) {
+			    acquirerAuthorizeRequest.setPaymentId(paymentId);
+            }
+			authorizeResponse = acquirerServiceAdapter.authorize(acquirerAuthorizeRequest, paymentId == null ? false : true);
 
 			logger.info("Response from Acquirer: " + authorizeResponse);
 

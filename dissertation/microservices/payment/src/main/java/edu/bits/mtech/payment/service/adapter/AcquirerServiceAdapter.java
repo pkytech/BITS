@@ -7,6 +7,7 @@ package edu.bits.mtech.payment.service.adapter;
 
 import edu.bits.mtech.payment.service.bo.AcquirerAuthorizeRequest;
 import edu.bits.mtech.payment.service.bo.AcquirerAuthorizeResponse;
+import org.springframework.http.ResponseEntity;
 
 /**
  * Acquirer service adapter.
@@ -15,5 +16,7 @@ import edu.bits.mtech.payment.service.bo.AcquirerAuthorizeResponse;
  */
 public interface AcquirerServiceAdapter {
 
-    AcquirerAuthorizeResponse authorize(AcquirerAuthorizeRequest acquirerAuthorizeRequest);
+    AcquirerAuthorizeResponse authorize(AcquirerAuthorizeRequest acquirerAuthorizeRequest, boolean update);
+
+    AcquirerAuthorizeResponse cancelAuthorize(String authorizeId);
 }
