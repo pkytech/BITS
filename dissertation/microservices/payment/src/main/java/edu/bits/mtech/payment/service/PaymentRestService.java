@@ -68,7 +68,7 @@ public class PaymentRestService {
 		if (payment != null && StatusEnum.PAYMENT_AUTHORIZED.name().equalsIgnoreCase(payment.getStatus())) {
             AuthorizePaymentResponse response = new AuthorizePaymentResponse();
             response.setPaymentId(payment.getPaymentId());
-            response.setAuhtorizeAmount(payment.getAuthorizeAmount());
+            response.setAuthorizeAmount(payment.getAuthorizeAmount());
             response.setOrderId(request.getOrderId());
 		    return ResponseEntity.ok(response);
         } else if (payment != null && payment.getAuthorizeAmount() < request.getAuthorizeAmount()) {
@@ -87,11 +87,13 @@ public class PaymentRestService {
 
 			//Fire event on queue for failed authorize
 			firePaymentEvent(request, null, StatusEnum.PAYMENT_AUTHORIZE_FAILED);
-			ResponseEntity.accepted();
+
+			return ResponseEntity.badRequest().body(response);
 		} else {
 			response.setPaymentId(authorizeResponse.getAuthorizeId());
 			response.setStatusCode(HttpStatus.ACCEPTED);
             response.setPaymentStatusCode(StatusEnum.PAYMENT_AUTHORIZED);
+            response.setAuthorizeAmount(authorizeResponse.getAuthorizeAmount());
 
             //save to DB
             boolean saveSuccessful = false;
@@ -115,7 +117,7 @@ public class PaymentRestService {
 
 		}
 
-		return ResponseEntity.ok(response);
+		return ResponseEntity.accepted().body(response);
 	}
 
     private AcquirerAuthorizeResponse cancelAuthorize(String authorizeId) {

@@ -144,6 +144,9 @@ public class OrderRepositoryImpl implements OrderRepository {
             transaction = session.beginTransaction();
 
             order = session.load(Order.class, key);
+            order.getPayment();
+            order.getBill();
+            logger.info("Order fetched: " + order);
 
             transaction.commit();
         } catch (Exception e) {
@@ -158,5 +161,55 @@ public class OrderRepositoryImpl implements OrderRepository {
             }
         }
         return order;
+    }
+
+    @Override
+    public void updateOrder(Order order) {
+        logger.info("Update Order called: ");
+        Transaction transaction = null;
+        Session session = null;
+        try {
+            session = sessionFactory.openSession();
+            transaction = session.beginTransaction();
+
+            session.update(order);
+
+            transaction.commit();
+        } catch (Exception e) {
+            logger.log(Level.WARNING, "Failed to update order entity", e);
+            if (transaction != null) {
+                transaction.rollback();
+            }
+            throw e;
+        } finally {
+            if (session != null) {
+                session.close();
+            }
+        }
+    }
+
+    @Override
+    public void updatePayment(Payment payment) {
+        logger.info("Update Payment called: ");
+        Transaction transaction = null;
+        Session session = null;
+        try {
+            session = sessionFactory.openSession();
+            transaction = session.beginTransaction();
+
+            session.update(payment);
+
+            transaction.commit();
+        } catch (Exception e) {
+            logger.log(Level.WARNING, "Failed to update payment entity", e);
+            if (transaction != null) {
+                transaction.rollback();
+            }
+            throw e;
+        } finally {
+            if (session != null) {
+                session.close();
+            }
+        }
     }
 }

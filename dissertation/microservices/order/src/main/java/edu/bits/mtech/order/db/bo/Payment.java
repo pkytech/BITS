@@ -9,6 +9,7 @@ import javax.persistence.Column;
 import javax.persistence.Entity;
 import javax.persistence.Id;
 import javax.persistence.Table;
+import java.util.UUID;
 
 /**
  * Entity for Payment
@@ -18,6 +19,7 @@ import javax.persistence.Table;
 public class Payment {
 
     private String paymentId;
+    private String acquirerPaymentId;
     private String status;
     private double authorizeAmount;
     private String orderId;
@@ -25,7 +27,7 @@ public class Payment {
     @Id
     @Column(name = "PAYMENT_ID", length = 50)
     public String getPaymentId() {
-        return paymentId == null ? "TEMP-"+System.currentTimeMillis() : paymentId;
+        return paymentId == null ? UUID.randomUUID().toString() : paymentId;
     }
 
     public void setPaymentId(String paymentId) {
@@ -59,12 +61,23 @@ public class Payment {
         this.orderId = orderId;
     }
 
+    @Column(name = "ACQUIRER_PAYMENT_ID", length = 50)
+    public String getAcquirerPaymentId() {
+        return acquirerPaymentId;
+    }
+
+    public void setAcquirerPaymentId(String acquirerPaymentId) {
+        this.acquirerPaymentId = acquirerPaymentId;
+    }
+
     @Override
     public String toString() {
         return "Payment{" +
                 "paymentId='" + paymentId + '\'' +
+                ", acquirerPaymentId='" + acquirerPaymentId + '\'' +
                 ", status='" + status + '\'' +
                 ", authorizeAmount=" + authorizeAmount +
+                ", orderId='" + orderId + '\'' +
                 '}';
     }
 }

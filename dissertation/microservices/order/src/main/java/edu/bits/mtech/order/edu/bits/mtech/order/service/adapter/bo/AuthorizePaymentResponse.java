@@ -1,4 +1,9 @@
-package edu.bits.mtech.payment.service.bo;
+/*
+ * Copyright (c) 2018.
+ * BITS Dissertation Proof Concept. Not related to any organization.
+ */
+
+package edu.bits.mtech.order.edu.bits.mtech.order.service.adapter.bo;
 
 import edu.bits.mtech.common.StatusEnum;
 import org.springframework.http.HttpStatus;

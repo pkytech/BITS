@@ -5,27 +5,28 @@
 
 package edu.bits.mtech.order.edu.bits.mtech.order.service;
 
+import edu.bits.mtech.common.BitsPocConstants;
 import edu.bits.mtech.common.StatusEnum;
+import edu.bits.mtech.common.bo.Event;
+import edu.bits.mtech.common.bo.EventData;
 import edu.bits.mtech.order.db.bo.Order;
 import edu.bits.mtech.order.db.bo.Payment;
 import edu.bits.mtech.order.db.repository.OrderRepository;
-import edu.bits.mtech.order.edu.bits.mtech.order.service.bo.OrderLineItem;
-import edu.bits.mtech.order.edu.bits.mtech.order.service.bo.OrderRequest;
-import edu.bits.mtech.order.edu.bits.mtech.order.service.bo.OrderResponse;
-import edu.bits.mtech.order.edu.bits.mtech.order.service.bo.PaymentInformation;
+import edu.bits.mtech.order.edu.bits.mtech.order.service.adapter.PaymentAdapter;
+import edu.bits.mtech.order.edu.bits.mtech.order.service.adapter.bo.AuthorizePaymentResponse;
+import edu.bits.mtech.order.edu.bits.mtech.order.service.bo.*;
+import edu.bits.mtech.order.kafka.OrderEventProducer;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.validation.annotation.Validated;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestMethod;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 import javax.validation.Valid;
 import javax.validation.constraints.NotNull;
 import java.util.List;
 import java.util.UUID;
+import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.stream.Collectors;
 
@@ -42,6 +43,40 @@ public class OrderRestService {
     @Autowired
     private OrderRepository orderRepository;
 
+    @Autowired
+    private PaymentAdapter paymentAdapter;
+
+    @Autowired
+    private OrderEventProducer orderEventProducer;
+
+    @RequestMapping(value = "/rest/order/{orderId}", method = RequestMethod.GET,
+            produces = MediaType.APPLICATION_JSON_VALUE)
+    public ResponseEntity<GetOrderResponse> getOrder(@PathVariable("orderId") String orderId) {
+
+        Order order = orderRepository.findOrderByKey(orderId);
+
+        GetOrderResponse response = populateGetOrder(order);
+
+        return ResponseEntity.ok(response);
+    }
+
+    private GetOrderResponse populateGetOrder(Order order) {
+        GetOrderResponse response = new GetOrderResponse();
+        response.setCustomerId(order.getCustomerId());
+        response.setOrderAmt(order.getOrderAmount());
+        response.setOrderId(order.getOrderId());
+        response.setOrderStatus(order.getStatus());
+
+        PaymentInformation paymentInformation = new PaymentInformation();
+        paymentInformation.setStatus(order.getPayment().getStatus());
+        paymentInformation.setPaymentId(order.getPayment().getAcquirerPaymentId());
+        paymentInformation.setPaymentAmt(order.getPayment().getAuthorizeAmount());
+        response.setPaymentInformation(paymentInformation);
+
+        return response;
+    }
+
+
     @RequestMapping(value = "/rest/order", method = RequestMethod.POST,
             consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
     public ResponseEntity<OrderResponse> createOrder(@RequestBody
@@ -51,16 +86,65 @@ public class OrderRestService {
         OrderResponse orderResponse = new OrderResponse();
         Order order = populateOrderEntity(orderRequest);
 
-        orderRepository.save(order.getPayment());
-        orderRepository.save(order);
-        logger.info("Order Saved: " + order);
+        try {
 
+            orderRepository.save(order);
+            logger.info("Order Saved: Order[" + order+"], Payment ["+order.getPayment() + "], Bill ["+order.getBill() + "]");
+
+            AuthorizePaymentResponse response = paymentAdapter.authorizePayment(order, orderRequest.getPaymentInformation());
+            if (response == null || response.getPaymentStatusCode() != StatusEnum.PAYMENT_AUTHORIZED) {
+                logger.info("Payment Authorize failed");
+
+                order.setStatus(StatusEnum.ORDER_CANCELLED.name());
+                orderRepository.updateOrder(order);
+
+                fireOrderEvent(order, null, StatusEnum.ORDER_CANCELLED);
+            } else {
+
+                Payment payment = order.getPayment();
+                payment.setAcquirerPaymentId(response.getPaymentId());
+                payment.setStatus(response.getPaymentStatusCode().name());
+                payment.setAuthorizeAmount(response.getAuthorizeAmount());
+
+                logger.info("Updating Payment: " + payment);
+                orderRepository.updatePayment(payment);
+
+                //update order with accepted status
+                order.setStatus(StatusEnum.ORDER_CONFIRMED.name());
+                logger.info("Updating Order: " + payment);
+                orderRepository.updateOrder(order);
+
+                fireOrderEvent(order, response.getPaymentId(), StatusEnum.ORDER_CONFIRMED);
+            }
+
+        } catch (Exception e) {
+            logger.log(Level.WARNING, "Failed to create order", e);
+
+            //Cancel order and
+            order.setStatus(StatusEnum.ORDER_CANCELLED.name());
+            order.getPayment().setStatus(StatusEnum.PAYMENT_CANCELLED.name());
+            orderRepository.updateOrder(order);
+
+            fireOrderEvent(order, order.getPayment().getAcquirerPaymentId(), StatusEnum.ORDER_CANCELLED);
+        }
         orderResponse.setOrderId(order.getOrderId());
         orderResponse.setOrderStatus(order.getStatus());
         orderResponse.setPaymentId(order.getPayment().getPaymentId());
         orderResponse.setPaymentStatus(order.getPayment().getStatus());
 
         return ResponseEntity.accepted().body(orderResponse);
+    }
+
+    private void fireOrderEvent(Order order, String paymentId, StatusEnum orderStatus) {
+        Event event = new Event();
+        event.setEventId(UUID.randomUUID().toString());
+        event.setSource(BitsPocConstants.ORDER_SERVICE.toUpperCase());
+        EventData data = new EventData();
+        data.setOrderId(order.getOrderId());
+        data.setPaymentId(paymentId);
+        data.setStatus(orderStatus);
+        event.setData(data);
+        orderEventProducer.produceEvent(event);
     }
 
     private Order populateOrderEntity(OrderRequest orderRequest) {
@@ -71,6 +155,7 @@ public class OrderRestService {
         order.setOrderId(UUID.randomUUID().toString());
         order.setPayment(populatePayment(orderRequest, order.getOrderId()));
         order.setItems(populateOrderLineItems(order, orderRequest.getItems()));
+        order.setOrderAmount(orderRequest.getOrderAmt());
         order.setStatus(StatusEnum.ORDER_CREATED.name());
         return order;
     }

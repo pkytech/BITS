@@ -16,6 +16,8 @@ public class PaymentInformation {
     private String cvv;
     private String nameOnCard;
     private double paymentAmt;
+    private String paymentId;
+    private String status;
 
     public String getCardNumber() {
         return cardNumber;
@@ -49,6 +51,22 @@ public class PaymentInformation {
         this.paymentAmt = paymentAmt;
     }
 
+    public void setPaymentId(String paymentId) {
+        this.paymentId = paymentId;
+    }
+
+    public String getPaymentId() {
+        return paymentId;
+    }
+
+    public void setStatus(String status) {
+        this.status = status;
+    }
+
+    public String getStatus() {
+        return status;
+    }
+
     @Override
     public String toString() {
         return "PaymentInformation{" +
@@ -56,6 +74,8 @@ public class PaymentInformation {
                 ", cvv='" + cvv + '\'' +
                 ", nameOnCard='" + nameOnCard + '\'' +
                 ", paymentAmt=" + paymentAmt +
+                ", paymentId='" + paymentId + '\'' +
+                ", status='" + status + '\'' +
                 '}';
     }
 }

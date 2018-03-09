@@ -21,6 +21,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.config.AutowireCapableBeanFactory;
 import org.springframework.cloud.client.loadbalancer.LoadBalanced;
 import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.ComponentScan;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Primary;
 import org.springframework.http.client.ClientHttpRequestFactory;
@@ -40,6 +41,7 @@ import org.springframework.web.client.RestTemplate;
 
 @Configuration
 @EnableKafka
+@ComponentScan("edu.bits.mtech.common")
 public class OrderConfigurator {
 
 	@Bean
@@ -56,7 +58,7 @@ public class OrderConfigurator {
 	}
 
 	private ClientHttpRequestFactory getClientHttpRequestFactory() {
-		int timeout = BitsConfigurator.getIntProperty("bits.mtech.connectionTimeout", 500);
+		int timeout = BitsConfigurator.getIntProperty("bits.mtech.connectionTimeout", 5000);
 		RequestConfig config = RequestConfig.custom()
 				.setConnectTimeout(timeout)
 				.setConnectionRequestTimeout(timeout)

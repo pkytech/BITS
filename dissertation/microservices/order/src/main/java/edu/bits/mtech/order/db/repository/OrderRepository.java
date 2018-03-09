@@ -18,4 +18,8 @@ public interface OrderRepository {
     Payment findPaymentByKey(String key);
 
     Order findOrderByKey(String key);
+
+    void updateOrder(Order order);
+
+    void updatePayment(Payment payment);
 }
