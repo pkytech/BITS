@@ -26,4 +26,6 @@ public interface BitsPocConstants {
     String ACTION_IGNORED = "IGNORED";
     String ACTION_PENDING = "PENDING";
     String ACTION_COMPLETED = "COMPLETED";
+    String CONFIRM = "confirm";
+    String REJECT = "reject";
 }

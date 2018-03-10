@@ -20,6 +20,7 @@ public class PaymentResponse {
     private String status;
     private String orderId;
     private String orderStatus;
+    private String message;
 
     public String getPaymentId() {
         return paymentId;
@@ -97,5 +98,13 @@ public class PaymentResponse {
                 ", orderId='" + orderId + '\'' +
                 ", orderStatus='" + orderStatus + '\'' +
                 '}';
+    }
+
+    public void setMessage(String message) {
+        this.message = message;
+    }
+
+    public String getMessage() {
+        return message;
     }
 }

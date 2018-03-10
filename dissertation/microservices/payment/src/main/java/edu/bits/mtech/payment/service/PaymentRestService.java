@@ -88,7 +88,7 @@ public class PaymentRestService {
 				try {
 					paymentRepository.update(payment);
 
-					firePaymentEvent(request, payment.getPaymentId(), StatusEnum.PAYMENT_CAPTURED);
+					firePaymentEvent(request.getOrderId(), payment.getPaymentId(), StatusEnum.PAYMENT_CAPTURED);
 					response.setStatusCode(HttpStatus.ACCEPTED);
 					response.setCaptureAmount(request.getCaptureAmount());
 
@@ -119,9 +119,8 @@ public class PaymentRestService {
 			logger.finest("Authorize Payment request received: " + request.getOrderId());
 		}
 
-        AcquirerAuthorizeResponse authorizeResponse = null;
-
 		//Check for idempotency
+		AcquirerAuthorizeResponse authorizeResponse = null;
         Order order = new Order();
         order.setOrderId(request.getOrderId());
         Payment payment = null;//paymentRepository.findByOrder(order);
@@ -146,7 +145,7 @@ public class PaymentRestService {
 			response.setPaymentStatusCode(StatusEnum.PAYMENT_AUTHORIZE_FAILED);
 
 			//Fire event on queue for failed authorize
-			firePaymentEvent(request, null, StatusEnum.PAYMENT_AUTHORIZE_FAILED);
+			firePaymentEvent(request.getOrderId(), null, StatusEnum.PAYMENT_AUTHORIZE_FAILED);
 
 			return ResponseEntity.badRequest().body(response);
 		} else {
@@ -175,7 +174,7 @@ public class PaymentRestService {
 
             //fire event on queue for successful authorize
             if (saveSuccessful) {
-                firePaymentEvent(request, authorizeResponse.getAuthorizeId(),
+                firePaymentEvent(request.getOrderId(), authorizeResponse.getAuthorizeId(),
 						request.getCaptureAmount() > 0 ? StatusEnum.PAYMENT_CAPTURED : StatusEnum.PAYMENT_AUTHORIZED);
             }
 
@@ -220,12 +219,12 @@ public class PaymentRestService {
         logger.info("Payment successfully saved to DB");
     }
 
-    private void firePaymentEvent(AuthorizePaymentRequest request, String paymentId,
+    private void firePaymentEvent(String orderId, String paymentId,
 								  StatusEnum paymentStatus) {
 		Event event = new Event();
 		event.setEventId(UUID.randomUUID().toString());
 		event.setSource(BitsPocConstants.PAYMENT_SERVICE.toUpperCase());
-		event.setOrderId(request.getOrderId());
+		event.setOrderId(orderId);
 		event.setPaymentId(paymentId);
 		event.setStatus(paymentStatus);
 		paymentEventProducer.produceEvent(event);
@@ -258,5 +257,46 @@ public class PaymentRestService {
 			logger.log(Level.WARNING, "Failed to call acquirer ", e);
 		}
 		return authorizeResponse;
+	}
+
+	@RequestMapping(value = "/rest/payment/{paymentId}/{status}", method = RequestMethod.PUT,
+			produces = MediaType.APPLICATION_JSON_VALUE)
+	public ResponseEntity<PaymentResponse> acceptOrRejectPayment(@PathVariable("paymentId") String paymentId,
+																 @PathVariable("status") String status) {
+		logger.info("Payment confirmation by acquirer: " + paymentId + ", status: " + status);
+		Payment payment = paymentRepository.findPaymentByKey(paymentId);
+		if (payment == null) {
+			return ResponseEntity.notFound().build();
+		}
+		if (BitsPocConstants.CONFIRM.equalsIgnoreCase(status)) {
+			payment.setStatus(StatusEnum.PAYMENT_SUCCESSFUL.name());
+
+			try {
+				paymentRepository.update(payment);
+
+				firePaymentEvent(payment.getOrder().getOrderId(), paymentId, StatusEnum.PAYMENT_SUCCESSFUL);
+			} catch(Exception e) {
+				logger.log(Level.WARNING, "Failed to save payment");
+			}
+		} else if (BitsPocConstants.REJECT.equalsIgnoreCase(status)) {
+			payment.setStatus(StatusEnum.PAYMENT_REJECTED.name());
+
+			try {
+				paymentRepository.update(payment);
+
+				firePaymentEvent(payment.getOrder().getOrderId(), paymentId, StatusEnum.PAYMENT_REJECTED);
+			} catch(Exception e) {
+				logger.log(Level.WARNING, "Failed to save payment");
+			}
+		} else {
+			PaymentResponse response = new PaymentResponse();
+			response.setMessage("Wrong status send. Please send a valid status");
+			return ResponseEntity.badRequest().body(response);
+		}
+		PaymentResponse response = new PaymentResponse();
+		response.setPaymentId(paymentId);
+		response.setStatus(payment.getStatus());
+		response.setOrderId(payment.getOrder().getOrderId());
+		return ResponseEntity.ok(response);
 	}
 }
