@@ -3,41 +3,25 @@
  * BITS Dissertation Proof Concept. Not related to any organization.
  */
 
-package edu.bits.mtech.payment.db.bo;
-
-
-import javax.persistence.*;
+package edu.bits.mtech.bo;
 
 /**
- * Business Object for Payment
+ * Get Payment Response business object.
+ *
+ * @author Tushar Phadke
  */
-@Entity
-@Table(name = "PAYMENT")
-public class Payment {
-
+public class PaymentResponse {
 
     private String paymentId;
-
-    private Order order;
-
     private long customerId;
-
     private String billNumber;
-
-    private String cardNumber;
-
-    private String nameOnCard;
-
-    private String cvv;
-
     private double authorizeAmount;
-
     private double paymentAmount;
-
     private String status;
+    private String orderId;
+    private String orderStatus;
+    private String message;
 
-    @Id
-    @Column(name = "PAYMENT_ID")
     public String getPaymentId() {
         return paymentId;
     }
@@ -46,17 +30,6 @@ public class Payment {
         this.paymentId = paymentId;
     }
 
-    @OneToOne(cascade = CascadeType.ALL, fetch = FetchType.EAGER)
-    @JoinColumn(name = "ORDER_ID")
-    public Order getOrder() {
-        return order;
-    }
-
-    public void setOrder(Order order) {
-        this.order = order;
-    }
-
-    @Column(name = "CUSTOMER_ID")
     public long getCustomerId() {
         return customerId;
     }
@@ -65,7 +38,6 @@ public class Payment {
         this.customerId = customerId;
     }
 
-    @Column(name = "BILL_ID", length = 50)
     public String getBillNumber() {
         return billNumber;
     }
@@ -74,34 +46,6 @@ public class Payment {
         this.billNumber = billNumber;
     }
 
-    @Column(name = "CARD_NUMBER", length = 16)
-    public String getCardNumber() {
-        return cardNumber;
-    }
-
-    public void setCardNumber(String cardNumber) {
-        this.cardNumber = cardNumber;
-    }
-
-    @Column(name = "NAME_ON_CARD", length = 50)
-    public String getNameOnCard() {
-        return nameOnCard;
-    }
-
-    public void setNameOnCard(String nameOnCard) {
-        this.nameOnCard = nameOnCard;
-    }
-
-    @Column(name = "CVV", length = 3)
-    public String getCvv() {
-        return cvv;
-    }
-
-    public void setCvv(String cvv) {
-        this.cvv = cvv;
-    }
-
-    @Column(name = "AUTHORIZE_AMT")
     public double getAuthorizeAmount() {
         return authorizeAmount;
     }
@@ -110,7 +54,6 @@ public class Payment {
         this.authorizeAmount = authorizeAmount;
     }
 
-    @Column(name = "PAYMENT_AMT")
     public double getPaymentAmount() {
         return paymentAmount;
     }
@@ -119,7 +62,6 @@ public class Payment {
         this.paymentAmount = paymentAmount;
     }
 
-    @Column(name = "STATUS", length = 20)
     public String getStatus() {
         return status;
     }
@@ -128,19 +70,41 @@ public class Payment {
         this.status = status;
     }
 
+    public String getOrderId() {
+        return orderId;
+    }
+
+    public void setOrderId(String orderId) {
+        this.orderId = orderId;
+    }
+
+    public void setOrderStatus(String orderStatus) {
+        this.orderStatus = orderStatus;
+    }
+
+    public String getOrderStatus() {
+        return orderStatus;
+    }
+
     @Override
     public String toString() {
-        return "Payment{" +
+        return "PaymentResponse{" +
                 "paymentId='" + paymentId + '\'' +
-                ", order=" + order +
                 ", customerId=" + customerId +
                 ", billNumber='" + billNumber + '\'' +
-                ", cardNumber='" + cardNumber + '\'' +
-                ", nameOnCard='" + nameOnCard + '\'' +
-                ", cvv='" + cvv + '\'' +
                 ", authorizeAmount=" + authorizeAmount +
                 ", paymentAmount=" + paymentAmount +
                 ", status='" + status + '\'' +
+                ", orderId='" + orderId + '\'' +
+                ", orderStatus='" + orderStatus + '\'' +
                 '}';
+    }
+
+    public void setMessage(String message) {
+        this.message = message;
+    }
+
+    public String getMessage() {
+        return message;
     }
 }

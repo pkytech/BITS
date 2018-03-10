@@ -5,21 +5,16 @@
 
 package edu.bits.mtech.order.db.repository;
 
+import edu.bits.mtech.common.bo.Event;
 import edu.bits.mtech.order.db.bo.Bill;
 import edu.bits.mtech.order.db.bo.Order;
 import edu.bits.mtech.order.db.bo.Payment;
 
 public interface OrderRepository {
 
-    void save(Payment payment);
-    void save(Order order);
-    void save(Bill bill);
-
+    void save(Object payment);
+    void update(Object object);
     Payment findPaymentByKey(String key);
-
     Order findOrderByKey(String key);
-
-    void updateOrder(Order order);
-
-    void updatePayment(Payment payment);
+    Event findEventById(String key);
 }

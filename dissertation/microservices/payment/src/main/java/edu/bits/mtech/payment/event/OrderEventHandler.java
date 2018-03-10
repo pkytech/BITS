@@ -111,6 +111,13 @@ public class OrderEventHandler implements EventHandler {
             //Save event
             event.setActionTaken(cancelSuccessful ? BitsPocConstants.ACTION_COMPLETED : BitsPocConstants.ACTION_PENDING);
             paymentRepository.save(event);
+        } else {
+            payment.getOrder().setStatus(event.getStatus().name());
+
+            paymentRepository.update(payment.getOrder());
+
+            event.setActionTaken(BitsPocConstants.ACTION_COMPLETED);
+            paymentRepository.save(event);
         }
     }
 }

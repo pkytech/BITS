@@ -5,7 +5,7 @@
 
 package edu.bits.mtech.order.db.repository;
 
-import edu.bits.mtech.order.db.bo.Bill;
+import edu.bits.mtech.common.bo.Event;
 import edu.bits.mtech.order.db.bo.Order;
 import edu.bits.mtech.order.db.bo.Payment;
 import org.hibernate.Session;
@@ -31,7 +31,7 @@ public class OrderRepositoryImpl implements OrderRepository {
     private SessionFactory sessionFactory;
 
     @Override
-    public void save(Payment payment) {
+    public void save(Object object) {
         logger.info("Save Payment called: ");
         Transaction transaction = null;
         Session session = null;
@@ -39,61 +39,11 @@ public class OrderRepositoryImpl implements OrderRepository {
             session = sessionFactory.openSession();
             transaction = session.beginTransaction();
 
-            session.saveOrUpdate(payment);
+            session.saveOrUpdate(object);
 
             transaction.commit();
         } catch (Exception e) {
             logger.log(Level.WARNING, "Failed to save payment entity", e);
-            if (transaction != null) {
-                transaction.rollback();
-            }
-            throw e;
-        } finally {
-            if (session != null) {
-                session.close();
-            }
-        }
-    }
-
-    @Override
-    public void save(Order order) {
-        logger.info("Save Order called: ");
-        Transaction transaction = null;
-        Session session = null;
-        try {
-            session = sessionFactory.openSession();
-            transaction = session.beginTransaction();
-
-            session.saveOrUpdate(order);
-
-            transaction.commit();
-        } catch (Exception e) {
-            logger.log(Level.WARNING, "Failed to save order entity", e);
-            if (transaction != null) {
-                transaction.rollback();
-            }
-            throw e;
-        } finally {
-            if (session != null) {
-                session.close();
-            }
-        }
-    }
-
-    @Override
-    public void save(Bill bill) {
-        logger.info("Save Bill called: ");
-        Transaction transaction = null;
-        Session session = null;
-        try {
-            session = sessionFactory.openSession();
-            transaction = session.beginTransaction();
-
-            session.saveOrUpdate(bill);
-
-            transaction.commit();
-        } catch (Exception e) {
-            logger.log(Level.WARNING, "Failed to save entity", e);
             if (transaction != null) {
                 transaction.rollback();
             }
@@ -163,19 +113,20 @@ public class OrderRepositoryImpl implements OrderRepository {
     }
 
     @Override
-    public void updateOrder(Order order) {
-        logger.info("Update Order called: ");
+    public Event findEventById(String key) {
+        logger.info("Save event called: ");
         Transaction transaction = null;
         Session session = null;
+        Event event = null;
         try {
             session = sessionFactory.openSession();
             transaction = session.beginTransaction();
 
-            session.update(order);
+            event = session.get(Event.class, key);
 
             transaction.commit();
         } catch (Exception e) {
-            logger.log(Level.WARNING, "Failed to update order entity", e);
+            logger.log(Level.WARNING, "Failed to get entity", e);
             if (transaction != null) {
                 transaction.rollback();
             }
@@ -185,10 +136,11 @@ public class OrderRepositoryImpl implements OrderRepository {
                 session.close();
             }
         }
+        return event;
     }
 
     @Override
-    public void updatePayment(Payment payment) {
+    public void update(Object object) {
         logger.info("Update Payment called: ");
         Transaction transaction = null;
         Session session = null;
@@ -196,11 +148,11 @@ public class OrderRepositoryImpl implements OrderRepository {
             session = sessionFactory.openSession();
             transaction = session.beginTransaction();
 
-            session.update(payment);
+            session.update(object);
 
             transaction.commit();
         } catch (Exception e) {
-            logger.log(Level.WARNING, "Failed to update payment entity", e);
+            logger.log(Level.WARNING, "Failed to update entity ", e);
             if (transaction != null) {
                 transaction.rollback();
             }

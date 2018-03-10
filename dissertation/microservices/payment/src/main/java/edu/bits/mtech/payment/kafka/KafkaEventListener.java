@@ -11,6 +11,7 @@ import edu.bits.mtech.common.event.EventHandler;
 import edu.bits.mtech.payment.db.repository.PaymentRepository;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.kafka.annotation.KafkaListener;
 import org.springframework.kafka.listener.MessageListener;
 import org.springframework.stereotype.Service;
@@ -23,11 +24,11 @@ import org.springframework.stereotype.Service;
 @Service
 public class KafkaEventListener implements MessageListener<Integer, String> {
 
-
 	@Autowired
 	private JsonConverter jsonConverter;
 
 	@Autowired
+	@Qualifier("orderEventHandler")
 	private EventHandler orderEventHandler;
 
 	@Autowired
@@ -63,9 +64,13 @@ public class KafkaEventListener implements MessageListener<Integer, String> {
 			return;
 		}
 
-		//Order Events
-		if (BitsPocConstants.ORDER_SERVICE.equalsIgnoreCase(event.getSource())) {
-			orderEventHandler.handleEvent(event);
+		//Avoid double handling of event
+		Event order = paymentRepository.findEventById(event.getEventId());
+		if (order == null || !BitsPocConstants.ACTION_COMPLETED.equalsIgnoreCase(order.getActionTaken())) {
+			//Order Events
+			if (BitsPocConstants.ORDER_SERVICE.equalsIgnoreCase(event.getSource())) {
+				orderEventHandler.handleEvent(event);
+			}
 		}
 	}
 }

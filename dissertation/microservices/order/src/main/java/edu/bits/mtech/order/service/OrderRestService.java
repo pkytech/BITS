@@ -53,9 +53,10 @@ public class OrderRestService {
     public ResponseEntity<GetOrderResponse> getOrder(@PathVariable("orderId") String orderId) {
 
         Order order = orderRepository.findOrderByKey(orderId);
-
+        if (order == null) {
+            return ResponseEntity.notFound().build();
+        }
         GetOrderResponse response = populateGetOrder(order);
-
         return ResponseEntity.ok(response);
     }
 
@@ -95,9 +96,9 @@ public class OrderRestService {
                 logger.info("Payment Authorize failed");
 
                 order.setStatus(StatusEnum.ORDER_CANCELLED.name());
-                orderRepository.updateOrder(order);
+                orderRepository.update(order);
 
-                fireOrderEvent(order, null, StatusEnum.ORDER_CANCELLED);
+                fireOrderEvent(order.getOrderId(), null, StatusEnum.ORDER_CANCELLED);
             } else {
 
                 Payment payment = order.getPayment();
@@ -106,14 +107,14 @@ public class OrderRestService {
                 payment.setAuthorizeAmount(response.getAuthorizeAmount());
 
                 logger.info("Updating Payment: " + payment);
-                orderRepository.updatePayment(payment);
+                orderRepository.update(payment);
 
                 //update order with accepted status
                 order.setStatus(StatusEnum.ORDER_CONFIRMED.name());
                 logger.info("Updating Order: " + payment);
-                orderRepository.updateOrder(order);
+                orderRepository.update(order);
 
-                fireOrderEvent(order, response.getPaymentId(), StatusEnum.ORDER_CONFIRMED);
+                fireOrderEvent(order.getOrderId(), response.getPaymentId(), StatusEnum.ORDER_CONFIRMED);
             }
 
         } catch (Exception e) {
@@ -122,9 +123,9 @@ public class OrderRestService {
             //Cancel order and
             order.setStatus(StatusEnum.ORDER_CANCELLED.name());
             order.getPayment().setStatus(StatusEnum.PAYMENT_CANCELLED.name());
-            orderRepository.updateOrder(order);
+            orderRepository.update(order);
 
-            fireOrderEvent(order, order.getPayment().getAcquirerPaymentId(), StatusEnum.ORDER_CANCELLED);
+            fireOrderEvent(order.getOrderId(), order.getPayment().getAcquirerPaymentId(), StatusEnum.ORDER_CANCELLED);
         }
         orderResponse.setOrderId(order.getOrderId());
         orderResponse.setOrderStatus(order.getStatus());
@@ -134,11 +135,11 @@ public class OrderRestService {
         return ResponseEntity.accepted().body(orderResponse);
     }
 
-    private void fireOrderEvent(Order order, String paymentId, StatusEnum orderStatus) {
+    private void fireOrderEvent(String orderId, String paymentId, StatusEnum orderStatus) {
         Event event = new Event();
         event.setEventId(UUID.randomUUID().toString());
         event.setSource(BitsPocConstants.ORDER_SERVICE.toUpperCase());
-        event.setOrderId(order.getOrderId());
+        event.setOrderId(orderId);
         event.setPaymentId(paymentId);
         event.setStatus(orderStatus);
         orderEventProducer.produceEvent(event);
