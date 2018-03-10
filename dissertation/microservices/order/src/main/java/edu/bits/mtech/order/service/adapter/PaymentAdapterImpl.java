@@ -3,14 +3,13 @@
  * BITS Dissertation Proof Concept. Not related to any organization.
  */
 
-package edu.bits.mtech.order.edu.bits.mtech.order.service.adapter;
+package edu.bits.mtech.order.service.adapter;
 
 import edu.bits.mtech.common.BitsPocConstants;
 import edu.bits.mtech.order.db.bo.Order;
-import edu.bits.mtech.order.db.bo.Payment;
-import edu.bits.mtech.order.edu.bits.mtech.order.service.adapter.bo.AuthorizePaymentRequest;
-import edu.bits.mtech.order.edu.bits.mtech.order.service.adapter.bo.AuthorizePaymentResponse;
-import edu.bits.mtech.order.edu.bits.mtech.order.service.bo.PaymentInformation;
+import edu.bits.mtech.order.service.adapter.bo.AuthorizePaymentRequest;
+import edu.bits.mtech.order.service.adapter.bo.AuthorizePaymentResponse;
+import edu.bits.mtech.order.service.bo.PaymentInformation;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -67,7 +66,7 @@ public class PaymentAdapterImpl implements PaymentAdapter {
         request.setCvv(paymentInformation.getCvv());
         request.setNameOnCard(paymentInformation.getNameOnCard());
         request.setOrderId(order.getOrderId());
-
+        request.setCaptureAmount(paymentInformation.getPaymentAmt());
         return request;
     }
 }

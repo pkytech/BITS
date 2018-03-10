@@ -5,6 +5,7 @@
 
 package edu.bits.mtech.payment.db.repository;
 
+import edu.bits.mtech.common.bo.Event;
 import edu.bits.mtech.payment.db.bo.Order;
 import edu.bits.mtech.payment.db.bo.Payment;
 import org.hibernate.Session;
@@ -56,6 +57,31 @@ public class PaymentRepositoryImpl implements PaymentRepository {
     }
 
     @Override
+    public void save(Event event) {
+        logger.info("Save Event called: " + event);
+        Transaction transaction = null;
+        Session session = null;
+        try {
+            session = sessionFactory.openSession();
+            transaction = session.beginTransaction();
+
+            session.saveOrUpdate(event);
+
+            transaction.commit();
+        } catch (Exception e) {
+            logger.log(Level.WARNING, "Failed to save event entity", e);
+            if (transaction != null) {
+                transaction.rollback();
+            }
+            throw e;
+        } finally {
+            if (session != null) {
+                session.close();
+            }
+        }
+    }
+
+    @Override
     public Payment findPaymentByKey(String key) {
 
         logger.info("Get payment called: ");
@@ -66,8 +92,7 @@ public class PaymentRepositoryImpl implements PaymentRepository {
             session = sessionFactory.openSession();
             transaction = session.beginTransaction();
 
-            payment = session.load(Payment.class, key);
-
+            payment = session.get(Payment.class, key);
             transaction.commit();
         } catch (Exception e) {
             logger.log(Level.WARNING, "Failed to get payment entity", e);
@@ -93,8 +118,7 @@ public class PaymentRepositoryImpl implements PaymentRepository {
             session = sessionFactory.openSession();
             transaction = session.beginTransaction();
 
-            order = session.load(Order.class, key);
-
+            order = session.get(Order.class, key);
             transaction.commit();
         } catch (Exception e) {
             logger.log(Level.WARNING, "Failed to get order entity", e);
@@ -108,5 +132,81 @@ public class PaymentRepositoryImpl implements PaymentRepository {
             }
         }
         return order;
+    }
+
+    @Override
+    public Event findEventById(String key) {
+        logger.info("Get Event called ");
+        Transaction transaction = null;
+        Session session = null;
+        Event event = null;
+        try {
+            session = sessionFactory.openSession();
+            transaction = session.beginTransaction();
+
+            event = session.get(Event.class, key);
+            transaction.commit();
+        } catch (Exception e) {
+            logger.log(Level.WARNING, "Failed to get event entity", e);
+            if (transaction != null) {
+                transaction.rollback();
+            }
+            throw e;
+        } finally {
+            if (session != null) {
+                session.close();
+            }
+        }
+        return event;
+    }
+
+    @Override
+    public void update(Payment payment) {
+        logger.info("Update Payment called: " + payment);
+        Transaction transaction = null;
+        Session session = null;
+        try {
+            session = sessionFactory.openSession();
+            transaction = session.beginTransaction();
+
+            session.update(payment);
+
+            transaction.commit();
+        } catch (Exception e) {
+            logger.log(Level.WARNING, "Failed to update entity", e);
+            if (transaction != null) {
+                transaction.rollback();
+            }
+            throw e;
+        } finally {
+            if (session != null) {
+                session.close();
+            }
+        }
+    }
+
+    @Override
+    public void update(Order order) {
+        logger.info("Update Order called: " + order);
+        Transaction transaction = null;
+        Session session = null;
+        try {
+            session = sessionFactory.openSession();
+            transaction = session.beginTransaction();
+
+            session.update(order);
+
+            transaction.commit();
+        } catch (Exception e) {
+            logger.log(Level.WARNING, "Failed to update order ", e);
+            if (transaction != null) {
+                transaction.rollback();
+            }
+            throw e;
+        } finally {
+            if (session != null) {
+                session.close();
+            }
+        }
     }
 }

@@ -27,6 +27,7 @@
         <mapping class="edu.bits.mtech.order.db.bo.Payment" />
         <mapping class="edu.bits.mtech.order.db.bo.Bill" />
         <mapping class="edu.bits.mtech.order.db.bo.OrderLineItem" />
+        <mapping class="edu.bits.mtech.common.bo.Event"/>
 
     </session-factory>
 </hibernate-configuration>

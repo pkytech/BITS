@@ -6,24 +6,18 @@ package edu.bits.mtech.payment.service;
 import edu.bits.mtech.common.BitsPocConstants;
 import edu.bits.mtech.common.StatusEnum;
 import edu.bits.mtech.common.bo.Event;
-import edu.bits.mtech.common.bo.EventData;
 import edu.bits.mtech.payment.db.bo.Order;
 import edu.bits.mtech.payment.db.bo.Payment;
 import edu.bits.mtech.payment.db.repository.PaymentRepository;
 import edu.bits.mtech.payment.kafka.PaymentEventProducer;
 import edu.bits.mtech.payment.service.adapter.AcquirerServiceAdapter;
-import edu.bits.mtech.payment.service.bo.AcquirerAuthorizeRequest;
-import edu.bits.mtech.payment.service.bo.AcquirerAuthorizeResponse;
-import edu.bits.mtech.payment.service.bo.AuthorizePaymentRequest;
-import edu.bits.mtech.payment.service.bo.AuthorizePaymentResponse;
+import edu.bits.mtech.payment.service.bo.*;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.validation.annotation.Validated;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestMethod;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 import javax.validation.Valid;
 import java.util.UUID;
@@ -48,6 +42,72 @@ public class PaymentRestService {
 
 	@Autowired
     private PaymentRepository paymentRepository;
+
+	@RequestMapping(value = "/rest/payment/{paymentId}", method = RequestMethod.GET,
+			produces = MediaType.APPLICATION_JSON_VALUE)
+	public ResponseEntity<PaymentResponse> getOrder(@PathVariable("paymentId") String paymentId) {
+
+		Payment payment = paymentRepository.findPaymentByKey(paymentId);
+		if (payment == null) {
+			return ResponseEntity.notFound().build();
+		}
+		PaymentResponse paymentResponse = new PaymentResponse();
+		paymentResponse.setPaymentId(payment.getPaymentId());
+		paymentResponse.setAuthorizeAmount(payment.getAuthorizeAmount());
+		paymentResponse.setBillNumber(payment.getBillNumber());
+		paymentResponse.setPaymentAmount(payment.getPaymentAmount());
+		paymentResponse.setCustomerId(payment.getCustomerId());
+		paymentResponse.setStatus(payment.getStatus());
+		paymentResponse.setOrderId(payment.getOrder().getOrderId());
+		paymentResponse.setOrderStatus(payment.getOrder().getStatus());
+
+		return ResponseEntity.ok(paymentResponse);
+	}
+
+	@RequestMapping(method = RequestMethod.POST, value = "/rest/payment/capture", produces = "application/json"
+			, consumes = "application/json")
+	public ResponseEntity<AuthorizePaymentResponse> capture(@RequestBody
+														  @Valid @Validated AuthorizePaymentRequest request) {
+
+		logger.info("Capture Payment called: " +request);
+
+		Payment payment = paymentRepository.findPaymentByKey(request.getPaymentId());
+		AuthorizePaymentResponse response = new AuthorizePaymentResponse();
+		if (payment == null) {
+			logger.fine("Payment not found");
+			return ResponseEntity.notFound().build();
+		}
+		if (StatusEnum.PAYMENT_AUTHORIZED.name().equalsIgnoreCase(payment.getStatus())) {
+			double authAmt = payment.getAuthorizeAmount();
+
+			if (authAmt <= request.getCaptureAmount()) {
+				payment.setPaymentAmount(request.getCaptureAmount());
+				payment.setStatus(StatusEnum.PAYMENT_CAPTURED.name());
+
+				//save to DB
+				try {
+					paymentRepository.update(payment);
+
+					firePaymentEvent(request, payment.getPaymentId(), StatusEnum.PAYMENT_CAPTURED);
+					response.setStatusCode(HttpStatus.ACCEPTED);
+					response.setCaptureAmount(request.getCaptureAmount());
+
+				} catch (Exception e) {
+					logger.log(Level.WARNING, "Failed to update payment", e);
+					response.setStatusCode(HttpStatus.BAD_REQUEST);
+					response.setMessage("Failed to update Payment. Contact administrator");
+				}
+			} else {
+				response.setStatusCode(HttpStatus.BAD_REQUEST);
+				response.setMessage("Capture amount does not match with authroize amount");
+			}
+		} else {
+			response.setStatusCode(HttpStatus.BAD_REQUEST);
+			response.setMessage("Payment is in invalid state: " + payment.getStatus());
+		}
+
+		return ResponseEntity.status(response.getStatusCode()).body(response);
+	}
 
 	@RequestMapping(method = RequestMethod.POST, value = "/rest/payment/authorize", produces = "application/json",
 			consumes = "application/json")
@@ -94,6 +154,9 @@ public class PaymentRestService {
 			response.setStatusCode(HttpStatus.ACCEPTED);
             response.setPaymentStatusCode(StatusEnum.PAYMENT_AUTHORIZED);
             response.setAuthorizeAmount(authorizeResponse.getAuthorizeAmount());
+            if (request.getCaptureAmount() > 0) {
+            	response.setPaymentStatusCode(StatusEnum.PAYMENT_CAPTURED);
+			}
 
             //save to DB
             boolean saveSuccessful = false;
@@ -112,7 +175,8 @@ public class PaymentRestService {
 
             //fire event on queue for successful authorize
             if (saveSuccessful) {
-                firePaymentEvent(request, authorizeResponse.getAuthorizeId(), StatusEnum.PAYMENT_AUTHORIZED);
+                firePaymentEvent(request, authorizeResponse.getAuthorizeId(),
+						request.getCaptureAmount() > 0 ? StatusEnum.PAYMENT_CAPTURED : StatusEnum.PAYMENT_AUTHORIZED);
             }
 
 		}
@@ -137,6 +201,12 @@ public class PaymentRestService {
         payment.setCustomerId(request.getCustomerId());
         payment.setPaymentId(authorizeResponse.getAuthorizeId());
         payment.setAuthorizeAmount(authorizeResponse.getAuthorizeAmount());
+        payment.setPaymentAmount(request.getCaptureAmount());
+        if (request.getCaptureAmount() > 0) {
+        	payment.setStatus(StatusEnum.PAYMENT_CAPTURED.name());
+		} else {
+        	payment.setStatus(StatusEnum.PAYMENT_AUTHORIZED.name());
+		}
 
         Order order = new Order();
         order.setCustomerId(request.getCustomerId());
@@ -155,11 +225,9 @@ public class PaymentRestService {
 		Event event = new Event();
 		event.setEventId(UUID.randomUUID().toString());
 		event.setSource(BitsPocConstants.PAYMENT_SERVICE.toUpperCase());
-		EventData data = new EventData();
-		data.setOrderId(request.getOrderId());
-		data.setPaymentId(paymentId);
-		data.setStatus(paymentStatus);
-		event.setData(data);
+		event.setOrderId(request.getOrderId());
+		event.setPaymentId(paymentId);
+		event.setStatus(paymentStatus);
 		paymentEventProducer.produceEvent(event);
 	}
 

@@ -19,9 +19,11 @@
         <property name="hibernate.connection.url">jdbc:hsqldb:file:/Users/tphadke/Documents/Personal/BITS/4_Semester/code/DB/paymentDB/paymentdb</property>
         <property name="hibernate.connection.username">SA</property>
         <property name="hibernate.connection.password"></property>
+        <property name="hibernate.hbm2ddl.auto">update</property>
 
         <!-- add classes to map from here -->
         <mapping class="edu.bits.mtech.payment.db.bo.Payment" />
         <mapping class="edu.bits.mtech.payment.db.bo.Order" />
+        <mapping class="edu.bits.mtech.common.bo.Event"/>
     </session-factory>
 </hibernate-configuration>

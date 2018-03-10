@@ -3,18 +3,17 @@
  * BITS Dissertation Proof Concept. Not related to any organization.
  */
 
-package edu.bits.mtech.order.edu.bits.mtech.order.service;
+package edu.bits.mtech.order.service;
 
 import edu.bits.mtech.common.BitsPocConstants;
 import edu.bits.mtech.common.StatusEnum;
 import edu.bits.mtech.common.bo.Event;
-import edu.bits.mtech.common.bo.EventData;
 import edu.bits.mtech.order.db.bo.Order;
 import edu.bits.mtech.order.db.bo.Payment;
 import edu.bits.mtech.order.db.repository.OrderRepository;
-import edu.bits.mtech.order.edu.bits.mtech.order.service.adapter.PaymentAdapter;
-import edu.bits.mtech.order.edu.bits.mtech.order.service.adapter.bo.AuthorizePaymentResponse;
-import edu.bits.mtech.order.edu.bits.mtech.order.service.bo.*;
+import edu.bits.mtech.order.service.adapter.PaymentAdapter;
+import edu.bits.mtech.order.service.adapter.bo.AuthorizePaymentResponse;
+import edu.bits.mtech.order.service.bo.*;
 import edu.bits.mtech.order.kafka.OrderEventProducer;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.MediaType;
@@ -92,7 +91,7 @@ public class OrderRestService {
             logger.info("Order Saved: Order[" + order+"], Payment ["+order.getPayment() + "], Bill ["+order.getBill() + "]");
 
             AuthorizePaymentResponse response = paymentAdapter.authorizePayment(order, orderRequest.getPaymentInformation());
-            if (response == null || response.getPaymentStatusCode() != StatusEnum.PAYMENT_AUTHORIZED) {
+            if (response == null || response.getPaymentStatusCode() != StatusEnum.PAYMENT_CAPTURED) {
                 logger.info("Payment Authorize failed");
 
                 order.setStatus(StatusEnum.ORDER_CANCELLED.name());
@@ -129,7 +128,7 @@ public class OrderRestService {
         }
         orderResponse.setOrderId(order.getOrderId());
         orderResponse.setOrderStatus(order.getStatus());
-        orderResponse.setPaymentId(order.getPayment().getPaymentId());
+        orderResponse.setPaymentId(order.getPayment().getAcquirerPaymentId());
         orderResponse.setPaymentStatus(order.getPayment().getStatus());
 
         return ResponseEntity.accepted().body(orderResponse);
@@ -139,11 +138,9 @@ public class OrderRestService {
         Event event = new Event();
         event.setEventId(UUID.randomUUID().toString());
         event.setSource(BitsPocConstants.ORDER_SERVICE.toUpperCase());
-        EventData data = new EventData();
-        data.setOrderId(order.getOrderId());
-        data.setPaymentId(paymentId);
-        data.setStatus(orderStatus);
-        event.setData(data);
+        event.setOrderId(order.getOrderId());
+        event.setPaymentId(paymentId);
+        event.setStatus(orderStatus);
         orderEventProducer.produceEvent(event);
     }
 

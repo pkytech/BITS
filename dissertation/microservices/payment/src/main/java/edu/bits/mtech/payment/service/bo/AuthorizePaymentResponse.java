@@ -16,6 +16,7 @@ public class AuthorizePaymentResponse {
     private double authorizeAmount;
     private String orderId;
     private StatusEnum paymentStatusCode;
+    private double captureAmount;
 
     public String getPaymentId() {
         return paymentId;
@@ -65,6 +66,14 @@ public class AuthorizePaymentResponse {
         return paymentStatusCode;
     }
 
+    public void setCaptureAmount(double captureAmount) {
+        this.captureAmount = captureAmount;
+    }
+
+    public double getCaptureAmount() {
+        return captureAmount;
+    }
+
     @Override
     public String toString() {
         return "AuthorizePaymentResponse{" +
@@ -74,6 +83,7 @@ public class AuthorizePaymentResponse {
                 ", authorizeAmount=" + authorizeAmount +
                 ", orderId='" + orderId + '\'' +
                 ", paymentStatusCode=" + paymentStatusCode +
+                ", captureAmount=" + captureAmount +
                 '}';
     }
 }

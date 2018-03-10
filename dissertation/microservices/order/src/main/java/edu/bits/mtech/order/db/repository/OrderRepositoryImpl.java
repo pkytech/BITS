@@ -116,7 +116,7 @@ public class OrderRepositoryImpl implements OrderRepository {
             session = sessionFactory.openSession();
             transaction = session.beginTransaction();
 
-            payment = session.load(Payment.class, key);
+            payment = session.get(Payment.class, key);
 
             transaction.commit();
         } catch (Exception e) {
@@ -143,9 +143,8 @@ public class OrderRepositoryImpl implements OrderRepository {
             session = sessionFactory.openSession();
             transaction = session.beginTransaction();
 
-            order = session.load(Order.class, key);
-            order.getPayment();
-            order.getBill();
+            order = session.get(Order.class, key);
+
             logger.info("Order fetched: " + order);
 
             transaction.commit();

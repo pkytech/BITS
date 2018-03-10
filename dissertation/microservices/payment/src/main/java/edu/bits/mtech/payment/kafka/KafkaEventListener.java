@@ -4,8 +4,11 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import edu.bits.mtech.common.BitsPocConstants;
 import edu.bits.mtech.common.JsonConverter;
 import edu.bits.mtech.common.bo.Event;
+import edu.bits.mtech.common.event.EventHandler;
+import edu.bits.mtech.payment.db.repository.PaymentRepository;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.kafka.annotation.KafkaListener;
@@ -23,6 +26,12 @@ public class KafkaEventListener implements MessageListener<Integer, String> {
 
 	@Autowired
 	private JsonConverter jsonConverter;
+
+	@Autowired
+	private EventHandler orderEventHandler;
+
+	@Autowired
+	private PaymentRepository paymentRepository;
 
 	private static final Logger logger = Logger.getLogger(KafkaEventListener.class.getName());
 	
@@ -46,8 +55,17 @@ public class KafkaEventListener implements MessageListener<Integer, String> {
 			logger.log(Level.WARNING, "Failed to convert message", ilse);
 			return;
 		}
-		if (event == null || event.getSource() == null || "PAYMENT".equalsIgnoreCase(event.getSource())) {
+		if (event == null || event.getSource() == null || BitsPocConstants.PAYMENT_SERVICE.equalsIgnoreCase(event.getSource())) {
+			if (event != null) {
+				event.setActionTaken(BitsPocConstants.ACTION_IGNORED);
+				paymentRepository.save(event);
+			}
 			return;
+		}
+
+		//Order Events
+		if (BitsPocConstants.ORDER_SERVICE.equalsIgnoreCase(event.getSource())) {
+			orderEventHandler.handleEvent(event);
 		}
 	}
 }

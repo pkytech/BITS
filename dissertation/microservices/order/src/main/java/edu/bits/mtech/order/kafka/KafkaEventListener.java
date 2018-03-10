@@ -3,6 +3,7 @@ package edu.bits.mtech.order.kafka;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
+import edu.bits.mtech.common.BitsPocConstants;
 import edu.bits.mtech.common.JsonConverter;
 import edu.bits.mtech.common.bo.Event;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
@@ -37,7 +38,8 @@ public class KafkaEventListener implements MessageListener<Integer, String> {
 			logger.log(Level.WARNING, "Failed to convert message", ilse);
 			return;
 		}
-		if (event == null || event.getSource() == null || "ORDER".equalsIgnoreCase(event.getSource())) {
+		if (event == null || event.getSource() == null || BitsPocConstants.ORDER_SERVICE.equalsIgnoreCase(event.getSource())) {
+
 			return;
 		}
 	}

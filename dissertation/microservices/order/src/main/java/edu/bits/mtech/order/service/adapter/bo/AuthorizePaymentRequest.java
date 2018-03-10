@@ -3,7 +3,7 @@
  * BITS Dissertation Proof Concept. Not related to any organization.
  */
 
-package edu.bits.mtech.order.edu.bits.mtech.order.service.adapter.bo;
+package edu.bits.mtech.order.service.adapter.bo;
 
 import javax.validation.constraints.NotNull;
 
@@ -21,6 +21,7 @@ public class AuthorizePaymentRequest {
     private String cvv;
     private double authorizeAmount;
     private long customerId;
+    private double captureAmount;
 
     public String getOrderId() {
         return orderId;
@@ -62,6 +63,22 @@ public class AuthorizePaymentRequest {
         this.authorizeAmount = authorizeAmount;
     }
 
+    public long getCustomerId() {
+        return customerId;
+    }
+
+    public void setCustomerId(long customerId) {
+        this.customerId = customerId;
+    }
+
+    public void setCaptureAmount(double captureAmount) {
+        this.captureAmount = captureAmount;
+    }
+
+    public double getCaptureAmount() {
+        return captureAmount;
+    }
+
     @Override
     public String toString() {
         return "AuthorizePaymentRequest{" +
@@ -70,14 +87,8 @@ public class AuthorizePaymentRequest {
                 ", nameOnCard='" + nameOnCard + '\'' +
                 ", cvv='" + cvv + '\'' +
                 ", authorizeAmount=" + authorizeAmount +
+                ", customerId=" + customerId +
+                ", captureAmount=" + captureAmount +
                 '}';
-    }
-
-    public long getCustomerId() {
-        return customerId;
-    }
-
-    public void setCustomerId(long customerId) {
-        this.customerId = customerId;
     }
 }

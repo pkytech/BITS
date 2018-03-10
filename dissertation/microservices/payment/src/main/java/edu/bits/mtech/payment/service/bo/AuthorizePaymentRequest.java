@@ -1,5 +1,7 @@
 package edu.bits.mtech.payment.service.bo;
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+
 import javax.validation.constraints.NotNull;
 
 /**
@@ -7,6 +9,7 @@ import javax.validation.constraints.NotNull;
  *
  * @author Tushar Phadke
  */
+@JsonIgnoreProperties
 public class AuthorizePaymentRequest {
 
     @NotNull(message = "Order Id should not be null")
@@ -15,7 +18,9 @@ public class AuthorizePaymentRequest {
     private String nameOnCard;
     private String cvv;
     private double authorizeAmount;
+    private double captureAmount;
     private long customerId;
+    private String paymentId;
 
     public String getOrderId() {
         return orderId;
@@ -57,6 +62,30 @@ public class AuthorizePaymentRequest {
         this.authorizeAmount = authorizeAmount;
     }
 
+    public long getCustomerId() {
+        return customerId;
+    }
+
+    public void setCustomerId(long customerId) {
+        this.customerId = customerId;
+    }
+
+    public String getPaymentId() {
+        return paymentId;
+    }
+
+    public void setPaymentId(String paymentId) {
+        this.paymentId = paymentId;
+    }
+
+    public double getCaptureAmount() {
+        return captureAmount;
+    }
+
+    public void setCaptureAmount(double captureAmount) {
+        this.captureAmount = captureAmount;
+    }
+
     @Override
     public String toString() {
         return "AuthorizePaymentRequest{" +
@@ -65,14 +94,9 @@ public class AuthorizePaymentRequest {
                 ", nameOnCard='" + nameOnCard + '\'' +
                 ", cvv='" + cvv + '\'' +
                 ", authorizeAmount=" + authorizeAmount +
+                ", captureAmount=" + captureAmount +
+                ", customerId=" + customerId +
+                ", paymentId='" + paymentId + '\'' +
                 '}';
-    }
-
-    public long getCustomerId() {
-        return customerId;
-    }
-
-    public void setCustomerId(long customerId) {
-        this.customerId = customerId;
     }
 }

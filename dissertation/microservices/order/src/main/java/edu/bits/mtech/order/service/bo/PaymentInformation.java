@@ -3,7 +3,7 @@
  * BITS Dissertation Proof Concept. Not related to any organization.
  */
 
-package edu.bits.mtech.order.edu.bits.mtech.order.service.bo;
+package edu.bits.mtech.order.service.bo;
 
 /**
  * Business object for payment information.
