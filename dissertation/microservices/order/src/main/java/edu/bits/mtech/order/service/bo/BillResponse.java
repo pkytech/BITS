@@ -10,15 +10,23 @@ package edu.bits.mtech.order.service.bo;
  *
  * @author Tushar Phadke
  */
-public class OrderResponse {
+public class BillResponse {
 
+    private String billId;
     private String orderId;
     private String paymentId;
     private String paymentStatus;
     private String orderStatus;
     private String status;
     private String errorMessage;
-    private String billId;
+
+    public String getBillId() {
+        return billId;
+    }
+
+    public void setBillId(String billId) {
+        this.billId = billId;
+    }
 
     public String getOrderId() {
         return orderId;
@@ -68,24 +76,16 @@ public class OrderResponse {
         this.errorMessage = errorMessage;
     }
 
-    public void setBillId(String billId) {
-        this.billId = billId;
-    }
-
-    public String getBillId() {
-        return billId;
-    }
-
     @Override
     public String toString() {
         return "OrderResponse{" +
-                "orderId='" + orderId + '\'' +
+                "billId='" + billId + '\'' +
+                ", orderId='" + orderId + '\'' +
                 ", paymentId='" + paymentId + '\'' +
                 ", paymentStatus='" + paymentStatus + '\'' +
                 ", orderStatus='" + orderStatus + '\'' +
                 ", status='" + status + '\'' +
                 ", errorMessage='" + errorMessage + '\'' +
-                ", billId='" + billId + '\'' +
                 '}';
     }
 }

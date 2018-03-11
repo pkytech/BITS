@@ -8,9 +8,11 @@ package edu.bits.mtech.order.service;
 import edu.bits.mtech.common.BitsPocConstants;
 import edu.bits.mtech.common.StatusEnum;
 import edu.bits.mtech.common.bo.Event;
+import edu.bits.mtech.order.db.bo.Bill;
 import edu.bits.mtech.order.db.bo.Order;
 import edu.bits.mtech.order.db.bo.Payment;
 import edu.bits.mtech.order.db.repository.OrderRepository;
+import edu.bits.mtech.order.service.adapter.BillAdapter;
 import edu.bits.mtech.order.service.adapter.PaymentAdapter;
 import edu.bits.mtech.order.service.adapter.bo.AuthorizePaymentResponse;
 import edu.bits.mtech.order.service.bo.*;
@@ -45,6 +47,9 @@ public class OrderRestService {
 
     @Autowired
     private PaymentAdapter paymentAdapter;
+
+    @Autowired
+    private BillAdapter billAdapter;
 
     @Autowired
     private OrderEventProducer orderEventProducer;
@@ -92,6 +97,34 @@ public class OrderRestService {
             orderRepository.save(order);
             logger.info("Order Saved: Order[" + order+"], Payment ["+order.getPayment() + "], Bill ["+order.getBill() + "]");
 
+            BillRequest billRequest = new BillRequest();
+            billRequest.setBillId(order.getBill().getBillId());
+            billRequest.setOrderAmt(order.getOrderAmount());
+            billRequest.setCustomerId(order.getCustomerId());
+            billRequest.setOrderId(order.getOrderId());
+
+            boolean billCreated = false;
+            try {
+                billCreated = billAdapter.createBill(billRequest);
+            } catch (Exception e) {
+                logger.log(Level.WARNING, "Failed to execute bill service", e);
+            }
+            if (!billCreated) {
+                order.setStatus(StatusEnum.ORDER_CANCELLED.name());
+                order.getPayment().setStatus(StatusEnum.PAYMENT_AUTHORIZE_FAILED.name());
+                orderRepository.update(order.getPayment());
+                orderRepository.update(order);
+
+                fireOrderEvent(order.getOrderId(), null, null, StatusEnum.ORDER_CANCELLED);
+                order.setStatus(HttpStatus.BAD_REQUEST.toString());
+
+                orderResponse.setOrderId(order.getOrderId());
+                orderResponse.setOrderStatus(order.getStatus());
+                orderResponse.setErrorMessage("Failed to create bill");
+
+                return ResponseEntity.badRequest().body(orderResponse);
+            }
+
             AuthorizePaymentResponse response = paymentAdapter.authorizePayment(order, orderRequest.getPaymentInformation());
             if (response == null || response.getPaymentStatusCode() != StatusEnum.PAYMENT_CAPTURED) {
                 logger.info("Payment Authorize failed");
@@ -102,7 +135,8 @@ public class OrderRestService {
                     orderRepository.update(order.getPayment());
                     orderRepository.update(order);
 
-                    fireOrderEvent(order.getOrderId(), null, StatusEnum.ORDER_CANCELLED);
+                    fireOrderEvent(order.getOrderId(), order.getBill().getBillId(),
+                            null, StatusEnum.ORDER_CANCELLED);
                     order.setStatus(HttpStatus.BAD_REQUEST.toString());
 
                     orderResponse.setOrderId(order.getOrderId());
@@ -129,7 +163,8 @@ public class OrderRestService {
                 logger.info("Updating Order: " + payment);
                 orderRepository.update(order);
 
-                fireOrderEvent(order.getOrderId(), response.getPaymentId(), StatusEnum.ORDER_CONFIRMED);
+                fireOrderEvent(order.getOrderId(), order.getBill().getBillId(),
+                        response.getPaymentId(), StatusEnum.ORDER_CONFIRMED);
             }
 
         } catch (Exception e) {
@@ -140,21 +175,24 @@ public class OrderRestService {
             order.getPayment().setStatus(StatusEnum.PAYMENT_CANCELLED.name());
             orderRepository.update(order);
 
-            fireOrderEvent(order.getOrderId(), order.getPayment().getAcquirerPaymentId(), StatusEnum.ORDER_CANCELLED);
+            fireOrderEvent(order.getOrderId(), order.getBill().getBillId(),
+                    order.getPayment().getAcquirerPaymentId(), StatusEnum.ORDER_CANCELLED);
         }
         orderResponse.setOrderId(order.getOrderId());
         orderResponse.setOrderStatus(order.getStatus());
         orderResponse.setPaymentId(order.getPayment().getAcquirerPaymentId());
         orderResponse.setPaymentStatus(order.getPayment().getStatus());
+        orderResponse.setBillId(order.getBill().getBillId());
 
         return ResponseEntity.accepted().body(orderResponse);
     }
 
-    private void fireOrderEvent(String orderId, String paymentId, StatusEnum orderStatus) {
+    private void fireOrderEvent(String orderId, String billId, String paymentId, StatusEnum orderStatus) {
         Event event = new Event();
         event.setEventId(UUID.randomUUID().toString());
         event.setSource(BitsPocConstants.ORDER_SERVICE.toUpperCase());
         event.setOrderId(orderId);
+        event.setBillId(billId);
         event.setPaymentId(paymentId);
         event.setStatus(orderStatus);
         orderEventProducer.produceEvent(event);
@@ -162,13 +200,14 @@ public class OrderRestService {
 
     private Order populateOrderEntity(OrderRequest orderRequest) {
         Order order = new Order();
-        if (order == null) {
-            return null;
-        }
         order.setOrderId(UUID.randomUUID().toString());
         order.setPayment(populatePayment(orderRequest, order.getOrderId()));
         order.setItems(populateOrderLineItems(order, orderRequest.getItems()));
         order.setOrderAmount(orderRequest.getOrderAmt());
+
+        Bill bill = new Bill();
+        bill.setBillId(UUID.randomUUID().toString());
+        order.setBill(bill);
         order.setStatus(StatusEnum.ORDER_CREATED.name());
         return order;
     }

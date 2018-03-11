@@ -88,7 +88,8 @@ public class PaymentRestService {
 				try {
 					paymentRepository.update(payment);
 
-					firePaymentEvent(request.getOrderId(), payment.getPaymentId(), StatusEnum.PAYMENT_CAPTURED);
+					firePaymentEvent(request.getOrderId(), payment.getPaymentId(), request.getBillId(),
+							request.getAuthorizeAmount(), StatusEnum.PAYMENT_CAPTURED);
 					response.setStatusCode(HttpStatus.ACCEPTED);
 					response.setCaptureAmount(request.getCaptureAmount());
 
@@ -121,9 +122,11 @@ public class PaymentRestService {
 
 		//Check for idempotency
 		AcquirerAuthorizeResponse authorizeResponse = null;
-        Order order = new Order();
-        order.setOrderId(request.getOrderId());
-        Payment payment = null;//paymentRepository.findByOrder(order);
+
+        Payment payment = null;
+        if (request.getPaymentId() != null) {
+			payment = paymentRepository.findPaymentByKey(request.getPaymentId());
+		}
 		if (payment != null && StatusEnum.PAYMENT_AUTHORIZED.name().equalsIgnoreCase(payment.getStatus())) {
             AuthorizePaymentResponse response = new AuthorizePaymentResponse();
             response.setPaymentId(payment.getPaymentId());
@@ -145,7 +148,8 @@ public class PaymentRestService {
 			response.setPaymentStatusCode(StatusEnum.PAYMENT_AUTHORIZE_FAILED);
 
 			//Fire event on queue for failed authorize
-			firePaymentEvent(request.getOrderId(), null, StatusEnum.PAYMENT_AUTHORIZE_FAILED);
+			firePaymentEvent(request.getOrderId(), null, request.getBillId(),
+					request.getAuthorizeAmount(), StatusEnum.PAYMENT_AUTHORIZE_FAILED);
 
 			return ResponseEntity.badRequest().body(response);
 		} else {
@@ -171,13 +175,15 @@ public class PaymentRestService {
                     logger.log(Level.SEVERE, "PAY001: Failed to cancel auth: " + authorizeResponse.getAuthorizeId());
                 }
 
-				firePaymentEvent(request.getOrderId(), authorizeResponse.getAuthorizeId(),
+				firePaymentEvent(request.getOrderId(), authorizeResponse.getAuthorizeId(), request.getBillId(),
+						request.getAuthorizeAmount(),
 						StatusEnum.PAYMENT_AUTHORIZE_FAILED);
             }
 
             //fire event on queue for successful authorize
             if (saveSuccessful) {
-                firePaymentEvent(request.getOrderId(), authorizeResponse.getAuthorizeId(),
+                firePaymentEvent(request.getOrderId(), authorizeResponse.getAuthorizeId(), request.getBillId(),
+						request.getAuthorizeAmount(),
 						request.getCaptureAmount() > 0 ? StatusEnum.PAYMENT_CAPTURED : StatusEnum.PAYMENT_AUTHORIZED);
             }
 
@@ -201,6 +207,7 @@ public class PaymentRestService {
         payment.setNameOnCard(request.getNameOnCard());
         payment.setCvv(request.getCvv());
         payment.setCustomerId(request.getCustomerId());
+        payment.setBillNumber(request.getBillId());
         payment.setPaymentId(authorizeResponse.getAuthorizeId());
         payment.setAuthorizeAmount(authorizeResponse.getAuthorizeAmount());
         payment.setPaymentAmount(request.getCaptureAmount());
@@ -222,12 +229,14 @@ public class PaymentRestService {
         logger.info("Payment successfully saved to DB");
     }
 
-    private void firePaymentEvent(String orderId, String paymentId,
+    private void firePaymentEvent(String orderId, String paymentId, String billId, double authorizeAmt,
 								  StatusEnum paymentStatus) {
 		Event event = new Event();
 		event.setEventId(UUID.randomUUID().toString());
 		event.setSource(BitsPocConstants.PAYMENT_SERVICE.toUpperCase());
 		event.setOrderId(orderId);
+		event.setBillId(billId);
+		event.setAuthorizeAmount(authorizeAmt);
 		event.setPaymentId(paymentId);
 		event.setStatus(paymentStatus);
 		paymentEventProducer.produceEvent(event);
@@ -277,7 +286,8 @@ public class PaymentRestService {
 			try {
 				paymentRepository.update(payment);
 
-				firePaymentEvent(payment.getOrder().getOrderId(), paymentId, StatusEnum.PAYMENT_SUCCESSFUL);
+				firePaymentEvent(payment.getOrder().getOrderId(), paymentId, payment.getBillNumber(),
+						payment.getAuthorizeAmount(), StatusEnum.PAYMENT_SUCCESSFUL);
 			} catch(Exception e) {
 				logger.log(Level.WARNING, "Failed to save payment");
 			}
@@ -287,7 +297,8 @@ public class PaymentRestService {
 			try {
 				paymentRepository.update(payment);
 
-				firePaymentEvent(payment.getOrder().getOrderId(), paymentId, StatusEnum.PAYMENT_REJECTED);
+				firePaymentEvent(payment.getOrder().getOrderId(), paymentId, payment.getBillNumber(),
+						payment.getAuthorizeAmount(), StatusEnum.PAYMENT_REJECTED);
 			} catch(Exception e) {
 				logger.log(Level.WARNING, "Failed to save payment");
 			}

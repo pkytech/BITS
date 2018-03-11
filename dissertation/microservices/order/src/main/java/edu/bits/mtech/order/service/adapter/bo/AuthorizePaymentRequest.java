@@ -22,6 +22,7 @@ public class AuthorizePaymentRequest {
     private double authorizeAmount;
     private long customerId;
     private double captureAmount;
+    private String billId;
 
     public String getOrderId() {
         return orderId;
@@ -79,6 +80,14 @@ public class AuthorizePaymentRequest {
         return captureAmount;
     }
 
+    public void setBillId(String billId) {
+        this.billId = billId;
+    }
+
+    public String getBillId() {
+        return billId;
+    }
+
     @Override
     public String toString() {
         return "AuthorizePaymentRequest{" +
@@ -89,6 +98,7 @@ public class AuthorizePaymentRequest {
                 ", authorizeAmount=" + authorizeAmount +
                 ", customerId=" + customerId +
                 ", captureAmount=" + captureAmount +
+                ", billId='" + billId + '\'' +
                 '}';
     }
 }

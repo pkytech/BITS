@@ -5,19 +5,19 @@
 
 package edu.bits.mtech.order.service.bo;
 
-import java.util.List;
-
 /**
  * Business object for creating order.
  *
  * @author Tushar Phadke
  */
-public class OrderRequest {
+public class BillRequest {
 
     private PaymentInformation paymentInformation;
-    private List<OrderLineItem> items;
+    private String billId;
     private long customerId;
+    private String orderId;
     private double orderAmt;
+    private String orderStatus;
 
     public PaymentInformation getPaymentInformation() {
         return paymentInformation;
@@ -27,14 +27,13 @@ public class OrderRequest {
         this.paymentInformation = paymentInformation;
     }
 
-    public List<OrderLineItem> getItems() {
-        return items;
+    public String getBillId() {
+        return billId;
     }
 
-    public void setItems(List<OrderLineItem> items) {
-        this.items = items;
+    public void setBillId(String billId) {
+        this.billId = billId;
     }
-
 
     public long getCustomerId() {
         return customerId;
@@ -52,12 +51,30 @@ public class OrderRequest {
         this.orderAmt = orderAmt;
     }
 
+    public String getOrderId() {
+        return orderId;
+    }
+
+    public void setOrderId(String orderId) {
+        this.orderId = orderId;
+    }
+
+    public String getOrderStatus() {
+        return orderStatus;
+    }
+
+    public void setOrderStatus(String orderStatus) {
+        this.orderStatus = orderStatus;
+    }
+
     @Override
     public String toString() {
-        return "OrderRequest{" +
+        return "BillRequest{" +
                 "paymentInformation=" + paymentInformation +
-                ", items=" + items +
+                ", billId='" + billId + '\'' +
                 ", customerId=" + customerId +
+                ", orderId='" + orderId + '\'' +
+                ", orderStatus='" + orderStatus + '\'' +
                 ", orderAmt=" + orderAmt +
                 '}';
     }

@@ -1,0 +1,32 @@
+<?xml version='1.0' encoding='utf-8'?>
+<!--
+  ~ Copyright (c) 2018.
+  ~ BITS Dissertation Proof Concept. Not related to any organization.
+  -->
+
+<!DOCTYPE hibernate-configuration PUBLIC
+        "-//Hibernate/Hibernate Configuration DTD 3.0//EN"
+        "http://hibernate.sourceforge.net/hibernate-configuration-3.0.dtd">
+
+<hibernate-configuration>
+    <session-factory>
+        <property name="hibernate.show_sql">true</property>
+        <property name="hibernate.format_sql">true</property>
+        <property name="use_sql_comments">false</property>
+
+        <property name="hibernate.dialect">org.hibernate.dialect.HSQLDialect</property>
+        <property name="hibernate.connection.driver_class">org.hsqldb.jdbc.JDBCDriver</property>
+        <property name="hibernate.connection.url">jdbc:hsqldb:file:billdb</property>
+        <property name="hibernate.connection.username">SA</property>
+        <property name="hibernate.connection.password"></property>
+        <!-- Create Table Automatically -->
+        <property name="hibernate.hbm2ddl.auto">update</property>
+
+        <!-- add classes to map from here -->
+        <mapping class="edu.bits.mtech.billing.db.bo.Order" />
+        <mapping class="edu.bits.mtech.billing.db.bo.Payment" />
+        <mapping class="edu.bits.mtech.billing.db.bo.Bill" />
+        <mapping class="edu.bits.mtech.common.bo.Event"/>
+
+    </session-factory>
+</hibernate-configuration>

@@ -66,7 +66,9 @@ public class PaymentAdapterImpl implements PaymentAdapter {
         request.setCvv(paymentInformation.getCvv());
         request.setNameOnCard(paymentInformation.getNameOnCard());
         request.setOrderId(order.getOrderId());
+        request.setBillId(order.getBill().getBillId());
         request.setCaptureAmount(paymentInformation.getPaymentAmt());
+
         return request;
     }
 }

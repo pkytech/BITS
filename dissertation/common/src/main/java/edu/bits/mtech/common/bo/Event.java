@@ -27,6 +27,8 @@ public class Event {
     private String paymentId;
     private String actionTaken;
     private StatusEnum status;
+    private String billId;
+    private double authorizeAmount;
 
     @Id
     @Column(name = "EVENT_ID", length = 50)
@@ -83,6 +85,24 @@ public class Event {
         this.actionTaken = actionTaken;
     }
 
+    @Column(name = "BILL_ID", length = 50)
+    public String getBillId() {
+        return billId;
+    }
+
+    public void setBillId(String billId) {
+        this.billId = billId;
+    }
+
+    @Column(name = "AUTHORIZE_AMT")
+    public double getAuthorizeAmount() {
+        return authorizeAmount;
+    }
+
+    public void setAuthorizeAmount(double authorizeAmount) {
+        this.authorizeAmount = authorizeAmount;
+    }
+
     @Override
     public String toString() {
         return "Event{" +
@@ -92,6 +112,8 @@ public class Event {
                 ", paymentId='" + paymentId + '\'' +
                 ", actionTaken='" + actionTaken + '\'' +
                 ", status=" + status +
+                ", billId='" + billId + '\'' +
+                ", authorizeAmount=" + authorizeAmount +
                 '}';
     }
 }

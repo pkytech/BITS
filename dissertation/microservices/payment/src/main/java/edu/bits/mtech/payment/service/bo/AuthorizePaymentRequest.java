@@ -17,6 +17,7 @@ public class AuthorizePaymentRequest {
     private String cardNumber;
     private String nameOnCard;
     private String cvv;
+    private String billId;
     private double authorizeAmount;
     private double captureAmount;
     private long customerId;
@@ -86,6 +87,14 @@ public class AuthorizePaymentRequest {
         this.captureAmount = captureAmount;
     }
 
+    public String getBillId() {
+        return billId;
+    }
+
+    public void setBillId(String billId) {
+        this.billId = billId;
+    }
+
     @Override
     public String toString() {
         return "AuthorizePaymentRequest{" +
@@ -93,6 +102,7 @@ public class AuthorizePaymentRequest {
                 ", cardNumber='" + cardNumber + '\'' +
                 ", nameOnCard='" + nameOnCard + '\'' +
                 ", cvv='" + cvv + '\'' +
+                ", billId='" + billId + '\'' +
                 ", authorizeAmount=" + authorizeAmount +
                 ", captureAmount=" + captureAmount +
                 ", customerId=" + customerId +

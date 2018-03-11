@@ -52,6 +52,7 @@ public class PaymentEventHandler implements EventHandler {
                 break;
             case PAYMENT_AUTHORIZE_FAILED:
                 handlePaymentAuthorizeFailed(event);
+                break;
             default:
                 event.setActionTaken(BitsPocConstants.ACTION_IGNORED);
                 orderRepository.save(event);

@@ -50,6 +50,7 @@ public class OrderEventHandler implements EventHandler {
                 break;
             case ORDER_CONFIRMED:
                 updateOrderStatus(event);
+                break;
             default:
                 event.setActionTaken(BitsPocConstants.ACTION_IGNORED);
                 paymentRepository.save(event);
