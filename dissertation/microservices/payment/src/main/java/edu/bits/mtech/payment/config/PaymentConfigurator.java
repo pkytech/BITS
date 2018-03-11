@@ -90,7 +90,6 @@ public class PaymentConfigurator {
 
 	private Map<String, Object> producerFactory() {
 		Map<String, Object> props = new HashMap<>();
-	    //props.put(ProducerConfig.BOOTSTRAP_SERVERS_CONFIG, "tphadke02lx.corp.amdocs.com:9092");
 		props.put(ProducerConfig.BOOTSTRAP_SERVERS_CONFIG, BitsConfigurator.getProperty("bits.mtech.kafka.server",
 				"localhost:9092"));
 	    props.put(ConsumerConfig.GROUP_ID_CONFIG, BitsPocConstants.PAYMENT_SERVICE);
