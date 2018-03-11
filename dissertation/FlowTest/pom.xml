@@ -4,7 +4,7 @@
   <groupId>edu.bits.mtech</groupId>
   <artifactId>dissertation-test</artifactId>
   <version>1.0.0-SNAPSHOT</version>
-  <packaging>pom</packaging>
+  <packaging>jar</packaging>
   <name>2016HT12516 Dissertation Test</name>
   <description>The Proof Of Concept related to dissertation of Tushar Phadke - 2016HT12516</description>
   <inceptionYear>2018</inceptionYear>
