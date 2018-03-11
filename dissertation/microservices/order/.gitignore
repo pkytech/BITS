@@ -4,6 +4,8 @@
 *.iws
 *.jar
 *.sw?
+orderdb.*
+orderdb.tmp/
 *~
 .#*
 .*.md.html

@@ -16,7 +16,7 @@
 
         <property name="hibernate.dialect">org.hibernate.dialect.HSQLDialect</property>
         <property name="hibernate.connection.driver_class">org.hsqldb.jdbc.JDBCDriver</property>
-        <property name="hibernate.connection.url">jdbc:hsqldb:file:/Users/tphadke/Documents/Personal/BITS/4_Semester/code/DB/orderDB/orderdb</property>
+        <property name="hibernate.connection.url">jdbc:hsqldb:file:orderdb</property>
         <property name="hibernate.connection.username">SA</property>
         <property name="hibernate.connection.password"></property>
         <!-- Create Table Automatically -->

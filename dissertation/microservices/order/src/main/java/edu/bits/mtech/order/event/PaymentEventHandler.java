@@ -49,10 +49,39 @@ public class PaymentEventHandler implements EventHandler {
                 break;
             case PAYMENT_SUCCESSFUL:
                 updateOrderStatus(event);
+                break;
+            case PAYMENT_AUTHORIZE_FAILED:
+                handlePaymentAuthorizeFailed(event);
             default:
                 event.setActionTaken(BitsPocConstants.ACTION_IGNORED);
                 orderRepository.save(event);
                 logger.info("Ignoring event: " + event);
+        }
+    }
+
+    private void handlePaymentAuthorizeFailed(Event event) {
+        Order order = orderRepository.findOrderByKey(event.getOrderId());
+        if (order == null) {
+            logger.info("Payment authroze failed event ignored as order/orderId is null");
+            event.setActionTaken(BitsPocConstants.ACTION_IGNORED);
+            orderRepository.save(event);
+            return;
+        }
+
+        try {
+            order.setStatus(StatusEnum.ORDER_CANCELLED.name());
+            order.getPayment().setStatus(StatusEnum.PAYMENT_AUTHORIZE_FAILED.name());
+            orderRepository.update(order.getPayment());
+            orderRepository.update(order);
+
+            event.setActionTaken(BitsPocConstants.ACTION_COMPLETED);
+            orderRepository.save(event);
+            fireOrderEvent(order.getOrderId(), order.getPayment().getPaymentId(), StatusEnum.ORDER_CONFIRMED);
+        } catch(Exception e) {
+            logger.log(Level.WARNING, "Failed to handle payment authorize failed order/event and fire event");
+
+            event.setActionTaken(BitsPocConstants.ACTION_PENDING);
+            orderRepository.save(event);
         }
     }
 
@@ -67,6 +96,8 @@ public class PaymentEventHandler implements EventHandler {
 
         try {
             order.setStatus(StatusEnum.ORDER_CONFIRMED.name());
+            order.getPayment().setStatus(StatusEnum.PAYMENT_SUCCESSFUL.name());
+            orderRepository.update(order.getPayment());
             orderRepository.update(order);
 
             event.setActionTaken(BitsPocConstants.ACTION_COMPLETED);
@@ -126,7 +157,10 @@ public class PaymentEventHandler implements EventHandler {
 
         try {
             order.setStatus(StatusEnum.ORDER_REJECTED.name());
+            order.getPayment().setStatus(StatusEnum.PAYMENT_REJECTED.name());
+            orderRepository.update(order.getPayment());
             orderRepository.update(order);
+
 
             event.setActionTaken(BitsPocConstants.ACTION_COMPLETED);
             orderRepository.save(order);

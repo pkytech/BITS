@@ -81,7 +81,7 @@ public class Order {
         this.items = items;
     }
 
-    @Column(name = "STATUS", length = 20)
+    @Column(name = "STATUS", length = 30)
     public String getStatus() {
         return status;
     }

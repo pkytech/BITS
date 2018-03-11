@@ -34,7 +34,7 @@ public class Payment {
         this.paymentId = paymentId;
     }
 
-    @Column(name = "PAYMENT_STATUS", length = 20)
+    @Column(name = "PAYMENT_STATUS", length = 30)
     public String getStatus() {
         return status;
     }

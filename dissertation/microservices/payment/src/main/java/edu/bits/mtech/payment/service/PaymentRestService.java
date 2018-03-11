@@ -170,6 +170,9 @@ public class PaymentRestService {
                 if (cancelAuthorize == null) {
                     logger.log(Level.SEVERE, "PAY001: Failed to cancel auth: " + authorizeResponse.getAuthorizeId());
                 }
+
+				firePaymentEvent(request.getOrderId(), authorizeResponse.getAuthorizeId(),
+						StatusEnum.PAYMENT_AUTHORIZE_FAILED);
             }
 
             //fire event on queue for successful authorize

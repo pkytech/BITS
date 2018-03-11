@@ -22,7 +22,7 @@ public class Order {
     private String paymentId;
 
     @Id
-    @Column(name = "ORDER_ID")
+    @Column(name = "ORDER_ID", length = 50)
     public String getOrderId() {
         return orderId;
     }
@@ -40,7 +40,7 @@ public class Order {
         this.customerId = customerId;
     }
 
-    @Column(name = "STATUS")
+    @Column(name = "STATUS", length = 30)
     public String getStatus() {
         return status;
     }
@@ -49,7 +49,7 @@ public class Order {
         this.status = status;
     }
 
-    @Column(name = "PAYMENT_ID")
+    @Column(name = "PAYMENT_ID", length = 50)
     public String getPaymentId() {
         return paymentId;
     }

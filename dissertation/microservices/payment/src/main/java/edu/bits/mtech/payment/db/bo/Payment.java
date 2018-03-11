@@ -119,7 +119,7 @@ public class Payment {
         this.paymentAmount = paymentAmount;
     }
 
-    @Column(name = "STATUS", length = 20)
+    @Column(name = "STATUS", length = 30)
     public String getStatus() {
         return status;
     }

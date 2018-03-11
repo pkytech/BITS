@@ -16,6 +16,7 @@ import edu.bits.mtech.order.service.adapter.bo.AuthorizePaymentResponse;
 import edu.bits.mtech.order.service.bo.*;
 import edu.bits.mtech.order.kafka.OrderEventProducer;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.validation.annotation.Validated;
@@ -95,10 +96,24 @@ public class OrderRestService {
             if (response == null || response.getPaymentStatusCode() != StatusEnum.PAYMENT_CAPTURED) {
                 logger.info("Payment Authorize failed");
 
-                order.setStatus(StatusEnum.ORDER_CANCELLED.name());
-                orderRepository.update(order);
+                try {
+                    order.setStatus(StatusEnum.ORDER_CANCELLED.name());
+                    order.getPayment().setStatus(StatusEnum.PAYMENT_AUTHORIZE_FAILED.name());
+                    orderRepository.update(order.getPayment());
+                    orderRepository.update(order);
 
-                fireOrderEvent(order.getOrderId(), null, StatusEnum.ORDER_CANCELLED);
+                    fireOrderEvent(order.getOrderId(), null, StatusEnum.ORDER_CANCELLED);
+                    order.setStatus(HttpStatus.BAD_REQUEST.toString());
+
+                    orderResponse.setOrderId(order.getOrderId());
+                    orderResponse.setOrderStatus(order.getStatus());
+                    orderResponse.setErrorMessage("Failed to authorize/capture payment");
+                } catch (Exception e) {
+                    orderResponse.setOrderId(order.getOrderId());
+                    orderResponse.setOrderStatus(order.getStatus());
+                    orderResponse.setErrorMessage("Failed to authorize/capture payment");
+                }
+                return ResponseEntity.badRequest().body(orderResponse);
             } else {
 
                 Payment payment = order.getPayment();

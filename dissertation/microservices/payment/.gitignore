@@ -4,6 +4,8 @@
 *.iws
 *.jar
 *.sw?
+paymentdb.*
+paymentdb.tmp/
 *~
 .#*
 .*.md.html
