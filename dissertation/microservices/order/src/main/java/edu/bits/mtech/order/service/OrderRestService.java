@@ -72,6 +72,8 @@ public class OrderRestService {
         response.setOrderAmt(order.getOrderAmount());
         response.setOrderId(order.getOrderId());
         response.setOrderStatus(order.getStatus());
+        response.setBillId(order.getBill().getBillId());
+        response.setCustomerId(order.getCustomerId());
 
         PaymentInformation paymentInformation = new PaymentInformation();
         paymentInformation.setStatus(order.getPayment().getStatus());

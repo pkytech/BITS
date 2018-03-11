@@ -13,6 +13,9 @@ import org.springframework.web.client.RestTemplate;
 import static org.testng.Assert.*;
 import org.testng.annotations.Test;
 
+import java.util.logging.Level;
+import java.util.logging.Logger;
+
 
 /**
  * Test class for testing BITS Proof Of Concept
@@ -21,11 +24,20 @@ import org.testng.annotations.Test;
  */
 public class TestBItsProofOfConcept {
 
+    private static final Logger logger = Logger.getLogger(TestBItsProofOfConcept.class.getName());
     private static final String PAYMENT_SERVER = BitsConfigurator.getProperty("bits.mtech.payment.server");
     private static final String ORDER_SERVER = BitsConfigurator.getProperty("bits.mtech.order.server");
+    private static final String BILL_SERVER = BitsConfigurator.getProperty("bits.mtech.bill.server");
     private static final String ORDER_CREATE = ORDER_SERVER+"/rest/order";
     private static final String PAYMENT_URL = PAYMENT_SERVER + "/rest/payment/";
     private static final String GET_ORDER = ORDER_CREATE+"/";
+    private static final String GET_BILL_URL = BILL_SERVER + "rest/bill/";
+
+    static {
+        logger.info("Payment   service URL: " + PAYMENT_URL);
+        logger.info("Get Bill  service URL: " + GET_BILL_URL);
+        logger.info("Get Order service URL: " + GET_ORDER);
+    }
 
     @Test
     public void testPositiveScenario_OrderCreationWith_PaymentConfirmFromAcquirer() {
@@ -49,7 +61,6 @@ public class TestBItsProofOfConcept {
             HttpEntity <OrderRequest> requestEntity = new HttpEntity <OrderRequest> (orderRequest, requestHeaders);
 
             RestTemplate restTemplate = TestUtil.buildRestTemplate();
-            System.out.println("Order URL " +ORDER_CREATE );
             ResponseEntity<OrderResponse> entity = restTemplate.exchange(ORDER_CREATE, HttpMethod.POST, requestEntity, OrderResponse.class);
 
             assertNotNull(entity, "ResponseEntity should not be null");
@@ -130,9 +141,35 @@ public class TestBItsProofOfConcept {
             assertEquals(paymentResponse.getPaymentId(), paymentId, "Payment Id does not match");
             assertEquals(paymentResponse.getStatus(), StatusEnum.PAYMENT_SUCCESSFUL.name(), "Payment status does not match");
             assertEquals(paymentResponse.getAuthorizeAmount(), paymentInformation.getPaymentAmt(), "Payment Amount does nor maTCH");
+
+            //Assert Order and Payment Details whether they are consistent with Order and Payment microservices
+            getBillAndValidateBill(restTemplate, orderResponse.getBillId(), getOrderResponse, paymentResponse);
+
+            logger.info("TEST SUCCESSFUL: At end of test, data from Order, Payment, Bill system is consistent with each other when payment is confirmed by acquirer");
         } catch (Exception e) {
-            e.printStackTrace(System.err);
+            logger.log(Level.WARNING, "Failed to execute test", e);
             fail("Failed to execute test", e);
+        }
+    }
+
+    private void getBillAndValidateBill(RestTemplate restTemplate, String billId, GetOrderResponse getOrderResponse,
+                                        PaymentResponse paymentResponse) {
+
+        try {
+            ResponseEntity<BillResponse> billResponseResponseEntity =
+                    restTemplate.getForEntity(GET_BILL_URL+billId, BillResponse.class);
+
+            assertNotNull(billResponseResponseEntity, "response entity should not be null");
+            assertEquals(billResponseResponseEntity.getStatusCode(), HttpStatus.OK, "HttpStatus should be 200");
+            assertNotNull(billResponseResponseEntity.getBody(), "Bill response entity should not be null");
+
+            BillResponse billResponse = billResponseResponseEntity.getBody();
+            assertEquals(billResponse.getOrderId(), getOrderResponse.getOrderId());
+            assertEquals(billResponse.getOrderStatus(), getOrderResponse.getOrderStatus());
+            assertEquals(billResponse.getPaymentId(), paymentResponse.getPaymentId());
+            assertEquals(billResponse.getPaymentStatus(), paymentResponse.getStatus());
+        } catch (Exception e) {
+            fail("Failed to call billing service");
         }
     }
 
@@ -158,7 +195,6 @@ public class TestBItsProofOfConcept {
             HttpEntity <OrderRequest> requestEntity = new HttpEntity <OrderRequest> (orderRequest, requestHeaders);
 
             RestTemplate restTemplate = TestUtil.buildRestTemplate();
-            System.out.println("Order URL to call " +ORDER_CREATE );
             ResponseEntity<OrderResponse> entity = restTemplate.exchange(ORDER_CREATE, HttpMethod.POST, requestEntity, OrderResponse.class);
 
             assertNotNull(entity, "ResponseEntity should not be null");
@@ -238,8 +274,13 @@ public class TestBItsProofOfConcept {
             assertEquals(paymentResponse.getPaymentId(), paymentId, "Payment Id does not match");
             assertEquals(paymentResponse.getStatus(), StatusEnum.PAYMENT_REJECTED.name(), "Payment status does not match");
             assertEquals(paymentResponse.getAuthorizeAmount(), paymentInformation.getPaymentAmt(), "Payment Amount does nor maTCH");
+
+            //Assert Order and Payment Details whether they are consistent with Order and Payment microservices
+            getBillAndValidateBill(restTemplate, orderResponse.getBillId(), getOrderResponse, paymentResponse);
+
+            logger.info("TEST SUCCESSFUL: At end of test, data from Order, Payment, Bill system is consistent with each other when payment is rejected by acquirer");
         } catch (Exception e) {
-            e.printStackTrace(System.err);
+            logger.log(Level.WARNING, "Failed to execute test", e);
             fail("Failed to execute test", e);
         }
     }
@@ -265,7 +306,6 @@ public class TestBItsProofOfConcept {
             HttpEntity <OrderRequest> requestEntity = new HttpEntity <OrderRequest> (orderRequest, requestHeaders);
 
             restTemplate = TestUtil.buildRestTemplate();
-            System.out.println("Order URL to call " + ORDER_CREATE );
             ResponseEntity<OrderResponse> entity = restTemplate.exchange(ORDER_CREATE, HttpMethod.POST, requestEntity, OrderResponse.class);
 
             assertNotNull(entity, "ResponseEntity should not be null");
@@ -288,10 +328,12 @@ public class TestBItsProofOfConcept {
                     "Payment status does not match");
             assertEquals(getOrderResponse.getOrderStatus(), StatusEnum.ORDER_CANCELLED.name(), "Order Status does not match");
 
+            logger.info("TEST SUCCESSFUL: At end of test, data from Order, Payment, Bill system is consistent with each other when payment authorization failed when payment system raised an error");
         } catch (Exception e) {
-            e.printStackTrace(System.err);
+            logger.log(Level.WARNING, "Failed to execute test", e);
             fail("Failed to execute test", e);
         }
+
     }
 
     private OrderResponse deserilizeOrderResponse(String responseBody) {
