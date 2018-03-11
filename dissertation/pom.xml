@@ -13,8 +13,8 @@
     <url>http://www.bits-pilani.ac.in/</url>
   </organization>
   <modules>
-  <module>test</module>  
 	<module>common</module>
 	<module>microservices</module>
+	<module>FlowTest</module>
   </modules>
 </project>
