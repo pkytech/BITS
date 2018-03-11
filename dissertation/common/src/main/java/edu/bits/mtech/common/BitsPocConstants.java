@@ -21,7 +21,7 @@ public interface BitsPocConstants {
     String ACQUIRER_SERVER_NAME = "acquirer-server";
     String BILLING_SERVER_NAME = "billing-server";
     String ORDER_SERVER_NAME = "order-server";
-    String KAFKA_QUEUE_NAME = "test";
+    String KAFKA_QUEUE_NAME = BitsConfigurator.getProperty("bits.mtech.kafka.topic-name", "csp");
 
     String ACTION_IGNORED = "IGNORED";
     String ACTION_PENDING = "PENDING";
