@@ -16,7 +16,6 @@
       <module>eureka-server</module>
       <module>acquirer</module>
       <module>billing</module>
-      <module>customer</module>
       <module>order</module>
       <module>payment</module>
   </modules>
