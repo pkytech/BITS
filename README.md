@@ -21,9 +21,10 @@ A directory which holds the Proof Of Concept (PoC) code for BITS Dissertation pe
 * Billing - Goto `BITS/dissertation/microservices/billing` and start using command `java -jar target/billing-service-1.0.0-SNAPSHOT.jar`
 5. Then open http://localhost:8999/ in browser and verify that all serves are registered in Eureka=server
 6. Modify `BITS/dissertation/FlowTest/src/test/resources/bits-test-config.properties` file to update server ip and port pertaining to payment, order, bill microservices respectively.
-bits.mtech.payment.server=http://192.168.0.7:8081
-bits.mtech.order.server=http://192.168.0.7:8084
-bits.mtech.bill.server=http://192.168.0.7:8082
+
+`bits.mtech.payment.server=http://192.168.0.7:8081` and
+`bits.mtech.order.server=http://192.168.0.7:8084` and 
+`bits.mtech.bill.server=http://192.168.0.7:8082`
 7. Open command prompt `BITS/dissertation/FlowTest` and run tests using command `mvn clean compile test`. The test result report will be created in target folder `BITS/dissertation/FlowTest/target/surefire-reports/emailable-report.html`. 
 
 If all three tests are successful then complete configuration and process is successful.
