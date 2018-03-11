@@ -9,7 +9,7 @@ A directory which holds the Proof Of Concept (PoC) code for BITS Dissertation pe
 4. Create Kafka topic called 'csp'
 5. Install and configure maven
 
-**## Setps for stating servers and running tests:**
+**## Steps for starting servers and running tests:**
 1. Open `BITS/dissertation/common/src/main/resources/bit-config.properties` file in editor and configure `**bits.mtech.kafka.server**` to a server and port of kafka zookeeper server
 2. Open command prompt and go to folder `BITS/dissertation/common` and execute command `mvn clean compile install`
 3. After successful build of common component, go to `BITS/dissertation/microservices` folder and build all microservices using command `mvn clean compile package`. After successful build starts servers
