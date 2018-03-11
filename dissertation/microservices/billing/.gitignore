@@ -4,6 +4,8 @@
 *.iws
 *.jar
 *.sw?
+billdb.*
+billdb.tmp/
 *~
 .#*
 .*.md.html
